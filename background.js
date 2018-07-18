@@ -7,13 +7,12 @@ chrome.runtime.onInstalled.addListener(function() {
 		getGroupsFromIse(ise, function(result) {
 			groups = result;
 
-			console.log("Runtime exec: ");
-			console.log(result);
-			
 			buildMenu(groups);
 		});
 
 	});
+
+	console.log("ISE Assistant is running!");
 });
 
 
@@ -23,13 +22,11 @@ chrome.contextMenus.onClicked.addListener(function(item) {
 	let newGroupId = item.menuItemId;
 
 	if( endpointMac ) {
-		console.log("moveEndpointToGroup("+endpointMac+", "+newGroupId+")");
 		moveEndpointToGroup(endpointMac, newGroupId);
 	} else {
-		console.log("Not a valid MAC address format.");
+		notify("Not a valid MAC address format.", "The text you selected did not match an accepted MAC address format. The MAC address must be in one of the following formats: xx:xx:xx:xx:xx:xx, xx-xx-xx-xx-xx-xx, xxxx.xxxx.xxxx", "fail");
 	}
 });
-
 
 
 
@@ -62,7 +59,6 @@ function getIseInfo(result) {
 
 function getGroupsFromIse(ise, callback) {
 	// Define ISE Parameters
-	console.log(ise);
 	let groupsURL = ise['url'] + "endpointgroup"
 
 	// Create HTTP request
@@ -74,6 +70,12 @@ function getGroupsFromIse(ise, callback) {
 	        let results = resp.SearchResult;
 
 	        callback(results);
+	    } else {
+	    	if (this.readyState == 4 && this.status == 401) {
+	    		notify("Error!", "Configured username/password does not have required permission in ISE. Please update username/password or fix permissions. Alternatively, disable the extension to stop these errors.", "fail");
+	    	} else if (this.readyState == 4 && this.status == 0 ) {
+	    		notify("Error!", "Configured server is inaccessible. Please check server IP or DNS settings.", "fail");
+	    	}
 	    }
 	};
 
@@ -105,6 +107,8 @@ function buildMenu(menuItems) {
 			contexts: ["selection"]
 		});
 	}
+
+	console.log("Menu built!");
 }
 
 function getEndpointByMac(endpointMac, callback) {
@@ -127,6 +131,11 @@ function getEndpointByMac(endpointMac, callback) {
 
 		        //console.log(results.mac + " has a UUID of " + results.id);
 		        callback(results);
+		    } else {
+		    	// handle errors
+		    	if( this.readyState == 4 && this.status == 404 ) {
+			  		notify("Error!", endpointMac + " does not exist in ISE.", "fail");
+		    	}
 		    }
 		};
 
@@ -153,6 +162,7 @@ function moveEndpointToGroup(endpointMac, groupId) {
 
 			let updateURL = ise['url'] + "endpoint/" + endpointId;
 
+			// build data payload for REST API PUT request
 			var data = JSON.stringify({
 			  "ERSEndPoint": {
 			    "id": endpointId,
@@ -172,14 +182,17 @@ function moveEndpointToGroup(endpointMac, groupId) {
 			    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
 			    		throw "not moved";
 			    	} else {
-				    	console.log(endpointMac + " was moved to " + resp.UpdatedFieldsList.updatedField[0]['newValue']);
+			    		notify("Success!", endpointMac + " was moved to " + resp.UpdatedFieldsList.updatedField[0]['newValue'], "success");
 			    	}
 			    } catch(error) {
-			    	createAlarm()
-			    	console.log("Endpoint " + error + ". This is most commonly due to the endpoint already being in the target group.");
+			    	notify("Error!", "Endpoint " + error + ". This is most commonly due to the endpoint already being in the target group.", "fail");
 			    }
 			  } else {
-			  	// handle non-200 status code
+			  	// handle non-200 status codes
+			  	// at this point, a 404 should never really occur given we already 
+			  	// looked up the endpoint for it's UUID, if it didn't exist, the error already occurred.
+			  	// this should also hold true for 403 (Forbidden), and 405 (Method Not Found) These errors 
+			  	// should be handled in the getEndpointByMac() function.
 			  }
 			};
 
@@ -220,4 +233,21 @@ function normalizeMac(mac) {
 	// Didn't match any valid format
 		return false
 	}
+}
+
+function notify(title, message, icon) {
+	// let's add .png to the passed icon string
+	// icon can be 'success' or 'fail'
+	icon = icon + ".png";
+
+	var options = {
+		type: "basic", 
+		title: title, 
+		message: message,
+		iconUrl: icon
+	};
+
+	chrome.notifications.create(options, function() {
+		console.log("Notification done!");
+	});
 }
