@@ -1,5 +1,17 @@
 # Cisco ISE Assistant
 A Google Chrome extension to help perform common tasks in Cisco ISE.
+## Table of Contents
+1. [Overview](#overview)
+2. [How to Install](#how-to-install)
+3. [Setting up](#setting-up)
+    1. [Enable ISE ERS API](#enable-ise-ers-api)
+    2. [Setup the Extension](#setup-the-extension)
+4. [How to Use](#how-to-use)
+    1. [Refresh Identity Group List](#refresh-identity-group-list)
+    2. [Valid MAC Address Formats](#valid-mac-address-formats)
+    3. [Invalid MAC Address Formats](#invalid-mac-address-formats)
+5. [Feedback](#feedback)
+6. [Tested on](#tested-on)
 ## Overview
 This extension helps to quickly move endpoints to new endpoint identity groups in Cisco ISE deployments. 
 
@@ -34,6 +46,32 @@ After saving, the extension will reload and build the context menus from your de
 
 Select some text and right click to confirm the that the context menu exists with the expected groups in it.
 
+## How to Use
+To use, simply highlight a MAC address, right click and go to "Add to Identity Group.." and select the desired identity group. 
+
+The context menu will appear only when text is selected. It should work on any webpage, tab, etc. 
+
+### Refresh Identity Group List
+The identity groups listed in the context menu are pulled from ISE when you open Chrome. 
+
+If you need to refresh the menu, you can click on the extension button and click save on the settings window. This will restart the extension, refreshing the menu. You can also restart Chrome entirely to refresh the list. 
+### Valid MAC Address Formats
+You will receive an error if the text you selected is not a valid MAC address.
+```
+// all valid
+AA11.BB22.CC33
+aa11.bb22.cc33
+AA-BB-CC-11-22-33
+aa-bb-cc-11-22-33
+AA:BB:CC:11:22:33
+aa:bb:cc:11:22:33
+
+// whitespace will be stripped automatically to help with accidental selections
+ aa:bb:cc:11:22:33
+  aabb.cc11.2233
+```
+### Invalid MAC Address Formats
+Basically anything else.
 ## Feedback
 While I create issues for enhancements, todos, etc, I want to add more functionality to this extension over time. Please open an issue for anything you'd like to see this extension do!
 
