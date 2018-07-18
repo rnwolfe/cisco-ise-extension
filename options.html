@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Options for ISE Assistant</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+    .container {
+      min-width: 300px;
+      max-width: 300px;
+      margin: 10px auto;
+    }
+    </style>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-light bg-light">
+      <span class="navbar-brand mb-0 h1">ISE Assistant Settings</span>
+    </nav>
+    <form id="form">
+      <div class="container">
+        <div class="form-group">
+          <label for="iseField">ISE Server</label>
+          <input class="form-control" id="iseField" aria-describedby="serverHelp" placeholder="Enter Server Address">
+          <small id="serverHelp" class="form-text text-muted">This should be an FQDN or IP address.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="portField">ISE ERS Port</label>
+          <input class="form-control" id="portField" aria-describedby="portHelp" placeholder="Enter ERS Port Number">
+          <small id="portHelp" class="form-text text-muted">Default port for ISE ERS is 9060.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="userField">ISE ERS User</label>
+          <input class="form-control" id="userField" aria-describedby="userHelp" placeholder="Enter ERS Username">
+          <small id="userHelp" class="form-text text-muted">Ensure this user has permissions to ISE ERS.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="passField">ISE ISE Server</label>
+          <input class="form-control" type="password" id="passField" aria-describedby="passHelp" placeholder="Enter ERS Password">
+        </div>
+        
+        <div class="form-group text-center">
+          <button type="submit" value="Submit" id="optionsSubmit" class="btn btn-primary">Save</button>
+        </div>
+
+      </div>
+    </form>
+
+    <script type="text/javascript" src="options.js"></script>
+  </body>
+</html>

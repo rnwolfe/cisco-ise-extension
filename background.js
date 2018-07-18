@@ -1,23 +1,33 @@
 // Get list of Identity Groups on install
 chrome.runtime.onInstalled.addListener(function() {
-	getGroupsFromIse(function(result) {
-		groups = result;
+	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+		var ise = getIseInfo(result);
 
-		console.log("Runtime exec: ");
-		console.log(result);
-		
-		buildMenu(groups);
+		// let's fire the canons
+		getGroupsFromIse(ise, function(result) {
+			groups = result;
+
+			console.log("Runtime exec: ");
+			console.log(result);
+			
+			buildMenu(groups);
+		});
+
 	});
 });
 
 
-chrome.contextMenus.onClicked.addListener(function(item, tab) {
+chrome.contextMenus.onClicked.addListener(function(item) {
 	// what to do when menu item is clicked!
-	let endpointMac = item.selectionText; // Need to make sure this is a MAC Address format at some point...
+	let endpointMac = normalizeMac(item.selectionText); // Need to make sure this is a MAC Address format at some point...
 	let newGroupId = item.menuItemId;
 
-	console.log("moveEndpointToGroup("+endpointMac+", "+newGroupId+")");
-	moveEndpointToGroup(endpointMac, newGroupId);
+	if( endpointMac ) {
+		console.log("moveEndpointToGroup("+endpointMac+", "+newGroupId+")");
+		moveEndpointToGroup(endpointMac, newGroupId);
+	} else {
+		console.log("Not a valid MAC address format.");
+	}
 });
 
 
@@ -25,18 +35,35 @@ chrome.contextMenus.onClicked.addListener(function(item, tab) {
 
 
 
-//////////////////////////// helper functions
-//////////////////////////////////////////////
-// Use AJAX to retrieve ISE Identity Groups
-//////////////////////////////////////////////
-let iseServer = "10.12.100.14";
-let isePort   = '9060';
-let baseURL   = "https://" + iseServer + ":" + isePort + "/ers/config/"
-let basicAuth = "YWRtaW46SXIwbjEyMzQhQCMk";
 
-function getGroupsFromIse(callback) {
+
+/////////////////////////////////////////
+
+
+function getIseInfo(result) {
+	var ise = new Array();
+
+    if(result.iseServer) { ise['server'] = result.iseServer } 
+    else { console.log("Please define server settings.") }
+
+    if(result.isePort) { ise['port'] = result.isePort } 
+    else { console.log("Please define port settings.") }
+
+    if(result.iseUser && result.isePass) { 
+    	ise['auth'] = btoa(result.iseUser + ":" + result.isePass);
+    } else { 
+    	console.log("Please define username and password settings."); 
+    }
+    
+    ise['url'] = "https://" + ise['server'] + ":" + ise['port'] + "/ers/config/";
+
+    return ise;
+}
+
+function getGroupsFromIse(ise, callback) {
 	// Define ISE Parameters
-	let groupsURL = baseURL + "endpointgroup"
+	console.log(ise);
+	let groupsURL = ise['url'] + "endpointgroup"
 
 	// Create HTTP request
 	let xhr = new XMLHttpRequest();
@@ -52,7 +79,7 @@ function getGroupsFromIse(callback) {
 
 	xhr.open("GET", groupsURL, true);
 
-	xhr.setRequestHeader("Authorization", "Basic " + basicAuth);
+	xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
 	xhr.setRequestHeader("Accept", "application/json");
 
 	// Bombs away
@@ -81,69 +108,116 @@ function buildMenu(menuItems) {
 }
 
 function getEndpointByMac(endpointMac, callback) {
-	// Specify URL for API call
-	let endpointInfoURL = baseURL + "endpoint/name/" + endpointMac;
-	// Create HTTP request
-	let xhr = new XMLHttpRequest();
-	// This function will handle response when it is return (given the request is sent asynchronously)
-	xhr.onreadystatechange = function() {
-	    if (this.readyState == 4 && this.status == 200) {
-	    	console.log(this);
-	        let resp = JSON.parse(this.response);
-	        let results = resp.ERSEndPoint;
+	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+		// get ISE settings
+		var ise = getIseInfo(result);
 
-	        console.log(results.mac + " has a UUID of " + results.id);
-	        callback(results);
-	    }
-	};
+		// Specify URL for API call
+		let endpointInfoURL = ise['url'] + "endpoint/name/" + endpointMac;
 
-	xhr.open("GET", endpointInfoURL, true);
+		// Create HTTP request
+		let xhr = new XMLHttpRequest();
 
-	xhr.setRequestHeader("Authorization", "Basic " + basicAuth);
-	xhr.setRequestHeader("Accept", "application/json");
+		// This will handle response when it is returned (given the request is sent asynchronously)
+		xhr.onreadystatechange = function() {
+		    if (this.readyState == 4 && this.status == 200) {
+		    	//console.log(this);
+		        let resp = JSON.parse(this.response);
+		        let results = resp.ERSEndPoint;
 
-	// Bombs away
-	xhr.send();
+		        //console.log(results.mac + " has a UUID of " + results.id);
+		        callback(results);
+		    }
+		};
+
+		xhr.open("GET", endpointInfoURL, true);
+
+		// Set required HTTP headers
+		xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
+		xhr.setRequestHeader("Accept", "application/json");
+
+		// Bombs away
+		xhr.send();
+	});
 }
 
 function moveEndpointToGroup(endpointMac, groupId) {
 	// get endpoint UUID
 	getEndpointByMac(endpointMac, function(result) {
-		// debugging
-		console.log("getEndpointByMac..");
-		console.log(result);
-		console.log(result.mac, result.id);
-
-		// actual function
+		
 		endpointId = result.id;
 		endpointMac = result.mac;
 
-		let updateURL = baseURL + "endpoint/" + result.id;
+		chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+			var ise = getIseInfo(result);
 
-		var data = JSON.stringify({
-		  "ERSEndPoint": {
-		    "id": result.id,
-		    "groupId": groupId,
-		    "staticGroupAssignment": true
-		  }
+			let updateURL = ise['url'] + "endpoint/" + endpointId;
+
+			var data = JSON.stringify({
+			  "ERSEndPoint": {
+			    "id": endpointId,
+			    "groupId": groupId,
+			    "staticGroupAssignment": true
+			  }
+			});
+
+			var xhr = new XMLHttpRequest();
+
+			xhr.onreadystatechange = function () {
+			  if (this.readyState === 4 && this.status == 200) {
+			    console.log(this.responseText);
+			    resp = JSON.parse(this.responseText);
+			    console.log(resp.UpdatedFieldsList);
+			    try {
+			    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
+			    		throw "not moved";
+			    	} else {
+				    	console.log(endpointMac + " was moved to " + resp.UpdatedFieldsList.updatedField[0]['newValue']);
+			    	}
+			    } catch(error) {
+			    	createAlarm()
+			    	console.log("Endpoint " + error + ". This is most commonly due to the endpoint already being in the target group.");
+			    }
+			  } else {
+			  	// handle non-200 status code
+			  }
+			};
+
+			xhr.open("PUT", updateURL);
+			xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
+			xhr.setRequestHeader("Accept", "application/json");
+			xhr.setRequestHeader("content-type", "application/json");
+
+			xhr.send(data);
 		});
-
-		var xhr = new XMLHttpRequest();
-
-		xhr.onreadystatechange = function () {
-		  if (this.readyState === 4) {
-		    console.log(this.responseText);
-		  }
-		};
-
-		xhr.open("PUT", updateURL);
-		xhr.setRequestHeader("Authorization", "Basic " + basicAuth);
-		xhr.setRequestHeader("Accept", "application/json");
-		xhr.setRequestHeader("content-type", "application/json");
-
-		xhr.send(data);
-
 	});
+}
 
-	// need to send endpoint HTTP PUT using the UUID
+function normalizeMac(mac) {
+	// The ISE API requires the MAC address be in the XX:XX:XX:XX:XX:XX format. 
+	// This function will return a MAC address in that format if a valid MAC is presented; otherwise,
+	// it will return false.
+	if( mac.match(/[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}/g) ) {
+	// 00:AA:B2:aa:Aa:0a, etc.
+		console.log('matched: xx:xx:xx:xx:xx:xx');
+		// In correct format. Let's just ensure it's fully in upper case for uniformity purposes.
+		return mac.toUpperCase();
+	} else if( mac.match(/[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}/g) ) {
+	// aa11.bb22.33cc, etc.
+		// Convert to correct format.
+		console.log(mac + ' matched: xxxx.xxxx.xxxx');
+		mac = mac.replace(/([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})/, "$1:$2:$3:$4:$5:$6")
+		console.log("Converted: " + mac.toUpperCase());
+		return mac.toUpperCase();
+	} else if( mac.match(/[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}/g) ) {
+	// 00-AA-B2-aa-Aa-0a, etc.
+		// Convert to correct format.
+		console.log(mac + ' matched: xx-xx-xx-xx-xx-xx');
+		mac = mac.replace(/([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})/, "$1:$2:$3:$4:$5:$6")
+		console.log("Converted: " + mac.toUpperCase());
+		return mac.toUpperCase();
+	} else {
+	// Didn't match any valid format
+		return false
+	}
 }
