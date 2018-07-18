@@ -19,6 +19,7 @@ chrome.runtime.onInstalled.addListener(function() {
 chrome.contextMenus.onClicked.addListener(function(item) {
 	// what to do when menu item is clicked!
 	let endpointMac = normalizeMac(item.selectionText); // Need to make sure this is a MAC Address format at some point...
+	console.log(endpointMac);
 	let newGroupId = item.menuItemId;
 
 	if( endpointMac ) {
@@ -135,6 +136,8 @@ function getEndpointByMac(endpointMac, callback) {
 		    	// handle errors
 		    	if( this.readyState == 4 && this.status == 404 ) {
 			  		notify("Error!", endpointMac + " does not exist in ISE.", "fail");
+		    	} else if( this.readyState == 4 && this.status == 401 ) {
+			  		notify("Error!", "Configured user does not have permissions required to retrieve endpoint info.", "fail");
 		    	}
 		    }
 		};
@@ -185,14 +188,20 @@ function moveEndpointToGroup(endpointMac, groupId) {
 			    		notify("Success!", endpointMac + " was moved to " + resp.UpdatedFieldsList.updatedField[0]['newValue'], "success");
 			    	}
 			    } catch(error) {
-			    	notify("Error!", "Endpoint " + error + ". This is most commonly due to the endpoint already being in the target group.", "fail");
+			    	notify("Error!", endpointMac + " " + error + ". This is most commonly due to the endpoint already being in the target group.", "fail");
 			    }
 			  } else {
 			  	// handle non-200 status codes
 			  	// at this point, a 404 should never really occur given we already 
 			  	// looked up the endpoint for it's UUID, if it didn't exist, the error already occurred.
-			  	// this should also hold true for 403 (Forbidden), and 405 (Method Not Found) These errors 
-			  	// should be handled in the getEndpointByMac() function.
+
+			  	// The primary errors we'd expect here are authorization or other API errors. A user may be 
+			  	// authorized to read groups/endpoint info but not to modify it. This could also occur if a user's
+			  	// permissions changed after they loaded their existing session.
+
+			  	if( this.readyState === 4 && this.status === 401 ) {
+			  		notify("Error!", "Configured user does not have required permissions to modify endpoint.", "fail");
+			  	}
 			  }
 			};
 
@@ -210,6 +219,7 @@ function normalizeMac(mac) {
 	// The ISE API requires the MAC address be in the XX:XX:XX:XX:XX:XX format. 
 	// This function will return a MAC address in that format if a valid MAC is presented; otherwise,
 	// it will return false.
+	console.log(mac)
 	if( mac.match(/[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}/g) ) {
 	// 00:AA:B2:aa:Aa:0a, etc.
 		console.log('matched: xx:xx:xx:xx:xx:xx');
