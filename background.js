@@ -17,7 +17,7 @@ chrome.runtime.onInstalled.addListener(function() {
 });
 
 
-chrome.contextMenus.onClicked.addListener(function(item, tab) {
+chrome.contextMenus.onClicked.addListener(function(item) {
 	// what to do when menu item is clicked!
 	let endpointMac = normalizeMac(item.selectionText); // Need to make sure this is a MAC Address format at some point...
 	let newGroupId = item.menuItemId;
