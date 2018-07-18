@@ -45,4 +45,5 @@ document.getElementById('optionsSubmit').onclick = function() {
   chrome.storage.local.set({isePass: passField.value});
 
   window.close();
+  chrome.runtime.reload();
 }
