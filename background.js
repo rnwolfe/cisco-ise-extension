@@ -114,9 +114,11 @@ function getEndpointByMac(endpointMac, callback) {
 
 		// Specify URL for API call
 		let endpointInfoURL = ise['url'] + "endpoint/name/" + endpointMac;
+
 		// Create HTTP request
 		let xhr = new XMLHttpRequest();
-		// This function will handle response when it is return (given the request is sent asynchronously)
+
+		// This will handle response when it is returned (given the request is sent asynchronously)
 		xhr.onreadystatechange = function() {
 		    if (this.readyState == 4 && this.status == 200) {
 		    	//console.log(this);
@@ -130,6 +132,7 @@ function getEndpointByMac(endpointMac, callback) {
 
 		xhr.open("GET", endpointInfoURL, true);
 
+		// Set required HTTP headers
 		xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
 		xhr.setRequestHeader("Accept", "application/json");
 
@@ -139,10 +142,9 @@ function getEndpointByMac(endpointMac, callback) {
 }
 
 function moveEndpointToGroup(endpointMac, groupId) {
-
 	// get endpoint UUID
 	getEndpointByMac(endpointMac, function(result) {
-		// actual function
+		
 		endpointId = result.id;
 		endpointMac = result.mac;
 
