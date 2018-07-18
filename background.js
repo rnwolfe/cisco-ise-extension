@@ -238,7 +238,7 @@ function normalizeMac(mac) {
 function notify(title, message, icon) {
 	// let's add .png to the passed icon string
 	// icon can be 'success' or 'fail'
-	icon = icon + ".png";
+	icon = "images/" + icon + ".png";
 
 	var options = {
 		type: "basic", 
