@@ -2,7 +2,7 @@
 chrome.runtime.onInstalled.addListener(function() {
 	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
 		var ise = getIseInfo(result);
-				
+
 		// let's fire the canons
 		getGroupsFromIse(ise, function(result) {
 			groups = result;
@@ -19,12 +19,18 @@ chrome.runtime.onInstalled.addListener(function() {
 
 chrome.contextMenus.onClicked.addListener(function(item, tab) {
 	// what to do when menu item is clicked!
-	let endpointMac = item.selectionText; // Need to make sure this is a MAC Address format at some point...
+	let endpointMac = normalizeMac(item.selectionText); // Need to make sure this is a MAC Address format at some point...
 	let newGroupId = item.menuItemId;
 
-	console.log("moveEndpointToGroup("+endpointMac+", "+newGroupId+")");
-	moveEndpointToGroup(endpointMac, newGroupId);
+	if( endpointMac ) {
+		console.log("moveEndpointToGroup("+endpointMac+", "+newGroupId+")");
+		moveEndpointToGroup(endpointMac, newGroupId);
+	} else {
+		console.log("Not a valid MAC address format.");
+	}
 });
+
+
 
 
 
@@ -113,11 +119,11 @@ function getEndpointByMac(endpointMac, callback) {
 		// This function will handle response when it is return (given the request is sent asynchronously)
 		xhr.onreadystatechange = function() {
 		    if (this.readyState == 4 && this.status == 200) {
-		    	console.log(this);
+		    	//console.log(this);
 		        let resp = JSON.parse(this.response);
 		        let results = resp.ERSEndPoint;
 
-		        console.log(results.mac + " has a UUID of " + results.id);
+		        //console.log(results.mac + " has a UUID of " + results.id);
 		        callback(results);
 		    }
 		};
@@ -136,11 +142,6 @@ function moveEndpointToGroup(endpointMac, groupId) {
 
 	// get endpoint UUID
 	getEndpointByMac(endpointMac, function(result) {
-		// debugging
-		console.log("getEndpointByMac..");
-		console.log(result);
-		console.log(result.mac, result.id);
-
 		// actual function
 		endpointId = result.id;
 		endpointMac = result.mac;
@@ -161,8 +162,22 @@ function moveEndpointToGroup(endpointMac, groupId) {
 			var xhr = new XMLHttpRequest();
 
 			xhr.onreadystatechange = function () {
-			  if (this.readyState === 4) {
+			  if (this.readyState === 4 && this.status == 200) {
 			    console.log(this.responseText);
+			    resp = JSON.parse(this.responseText);
+			    console.log(resp.UpdatedFieldsList);
+			    try {
+			    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
+			    		throw "not moved";
+			    	} else {
+				    	console.log(endpointMac + " was moved to " + resp.UpdatedFieldsList.updatedField[0]['newValue']);
+			    	}
+			    } catch(error) {
+			    	createAlarm()
+			    	console.log("Endpoint " + error + ". This is most commonly due to the endpoint already being in the target group.");
+			    }
+			  } else {
+			  	// handle non-200 status code
 			  }
 			};
 
@@ -174,4 +189,33 @@ function moveEndpointToGroup(endpointMac, groupId) {
 			xhr.send(data);
 		});
 	});
+}
+
+function normalizeMac(mac) {
+	// The ISE API requires the MAC address be in the XX:XX:XX:XX:XX:XX format. 
+	// This function will return a MAC address in that format if a valid MAC is presented; otherwise,
+	// it will return false.
+	if( mac.match(/[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}/g) ) {
+	// 00:AA:B2:aa:Aa:0a, etc.
+		console.log('matched: xx:xx:xx:xx:xx:xx');
+		// In correct format. Let's just ensure it's fully in upper case for uniformity purposes.
+		return mac.toUpperCase();
+	} else if( mac.match(/[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}/g) ) {
+	// aa11.bb22.33cc, etc.
+		// Convert to correct format.
+		console.log(mac + ' matched: xxxx.xxxx.xxxx');
+		mac = mac.replace(/([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})/, "$1:$2:$3:$4:$5:$6")
+		console.log("Converted: " + mac.toUpperCase());
+		return mac.toUpperCase();
+	} else if( mac.match(/[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}/g) ) {
+	// 00-AA-B2-aa-Aa-0a, etc.
+		// Convert to correct format.
+		console.log(mac + ' matched: xx-xx-xx-xx-xx-xx');
+		mac = mac.replace(/([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})/, "$1:$2:$3:$4:$5:$6")
+		console.log("Converted: " + mac.toUpperCase());
+		return mac.toUpperCase();
+	} else {
+	// Didn't match any valid format
+		return false
+	}
 }
