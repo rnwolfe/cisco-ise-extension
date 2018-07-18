@@ -220,23 +220,23 @@ function normalizeMac(mac) {
 	// This function will return a MAC address in that format if a valid MAC is presented; otherwise,
 	// it will return false.
 	console.log(mac)
-	if( mac.match(/[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}/g) ) {
+	if( mac.match(/^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}$/g) ) {
 	// 00:AA:B2:aa:Aa:0a, etc.
 		console.log('matched: xx:xx:xx:xx:xx:xx');
 		// In correct format. Let's just ensure it's fully in upper case for uniformity purposes.
 		return mac.toUpperCase();
-	} else if( mac.match(/[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}/g) ) {
+	} else if( mac.match(/^[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}$/g) ) {
 	// aa11.bb22.33cc, etc.
 		// Convert to correct format.
 		console.log(mac + ' matched: xxxx.xxxx.xxxx');
-		mac = mac.replace(/([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})/, "$1:$2:$3:$4:$5:$6")
+		mac = mac.replace(/(^[0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
 		console.log("Converted: " + mac.toUpperCase());
 		return mac.toUpperCase();
-	} else if( mac.match(/[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}/g) ) {
+	} else if( mac.match(/^[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}$/g) ) {
 	// 00-AA-B2-aa-Aa-0a, etc.
 		// Convert to correct format.
 		console.log(mac + ' matched: xx-xx-xx-xx-xx-xx');
-		mac = mac.replace(/([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})/, "$1:$2:$3:$4:$5:$6")
+		mac = mac.replace(/(^[0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
 		console.log("Converted: " + mac.toUpperCase());
 		return mac.toUpperCase();
 	} else {
