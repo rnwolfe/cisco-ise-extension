@@ -185,7 +185,7 @@ function moveEndpointToGroup(endpointMac, groupId) {
 			    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
 			    		throw "not moved";
 			    	} else {
-			    		notify("Success!", endpointMac + " was moved to " + resp.UpdatedFieldsList.updatedField[0]['newValue'], "success");
+			    		notify("Success!", endpointMac + " was moved successfully!", "success");
 			    	}
 			    } catch(error) {
 			    	notify("Error!", endpointMac + " " + error + ". This is most commonly due to the endpoint already being in the target group.", "fail");
