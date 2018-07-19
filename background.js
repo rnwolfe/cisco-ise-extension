@@ -18,15 +18,25 @@ chrome.runtime.onInstalled.addListener(function() {
 
 chrome.contextMenus.onClicked.addListener(function(item) {
 	// what to do when menu item is clicked!
-	let endpointMac = normalizeMac(item.selectionText); // Need to make sure this is a MAC Address format at some point...
-	console.log(endpointMac);
-	let newGroupId = item.menuItemId;
+	let selectedText = item.selectionText;
+	let endpointMacs = findMacAddresses(selectedText);
 
-	if( endpointMac ) {
-		moveEndpointToGroup(endpointMac, newGroupId);
+	let newGroupId   = item.menuItemId
+
+	if( endpointMacs ) {
+		// normalize the mac addresses		
+		endpointMacs = normalizeMacs(endpointMacs);
+
+		// move the macs
+		for( mac in endpointMacs ) {
+			mac = endpointMacs[mac];
+
+			moveEndpointToGroup(mac, newGroupId);
+		}
 	} else {
 		notify("Not a valid MAC address format.", "The text you selected did not match an accepted MAC address format. The MAC address must be in one of the following formats: xx:xx:xx:xx:xx:xx, xx-xx-xx-xx-xx-xx, xxxx.xxxx.xxxx", "fail");
 	}
+
 });
 
 
@@ -112,6 +122,86 @@ function buildMenu(menuItems) {
 	console.log("Menu built!");
 }
 
+function findMacAddresses(selectedText) {
+	colonNotation  = RegExp('[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}', 'g');
+	dashNotation   = RegExp('[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}', 'g');
+	dottedNotation = RegExp('[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}', 'g');
+	
+	if( colonNotation.test(selectedText) || dashNotation.test(selectedText) || dottedNotation.test(selectedText) ) {
+		// valid MACs were found!
+		let matches = new Array();
+
+		// we have to only do the match if it matches, otherwise returns null value to array
+		// this is "simpler" than writing loop to remove all null values from array
+		if( colonNotation.test(selectedText) ) {
+		// 00:AA:B2:aa:Aa:0a, etc.
+			matches = matches.concat(selectedText.match(colonNotation));
+		}
+
+		if( dashNotation.test(selectedText) ) {
+		// 00-AA-B2-aa-Aa-0a, etc.
+			matches = matches.concat(selectedText.match(dashNotation));
+		}
+
+		if( dottedNotation.test(selectedText) ) {
+		// aa11.bb22.33cc, etc.
+			matches = matches.concat(selectedText.match(dottedNotation));
+		}
+
+		return matches;
+	} else {
+		// no valid MACs were found
+		return false;
+	}
+}
+
+function deduplicateMacs(macs) {
+	let uniqueMacs = macs.sort().filter(function(item, pos, ary) {
+        return !pos || item != ary[pos - 1];
+    })
+
+    return uniqueMacs;
+}
+
+function normalizeMacs(macs) {
+	// The ISE API requires the MAC address be in the XX:XX:XX:XX:XX:XX format. 
+	// This function will return a MAC address in that format if a valid MAC is presented; otherwise,
+	// it will return false.
+
+	// after adding ability to highlight a bunch of text and findMacAddresses(), the array
+	// that is passed here should only contain valid MAC addresses. So, returning false if invalid is not
+	// necessary, as that function should have done that already. 
+
+	// remove any duplicates that were passed, we will have to do this again after normalization 
+	// because AA:BB:CC:11:22:33 != AA-BB-CC-11-22-33 != aabb.cc11.2233
+	// but, best to do it now to as to not normalize duplicate versions of the same mac
+
+	let uniqueMacs = deduplicateMacs(macs);
+
+	let normalizedMacs = new Array();
+
+	for( mac in uniqueMacs ) {
+		mac = uniqueMacs[mac];
+		if( mac.match(/^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}$/g) ) {
+		// 00:AA:B2:aa:Aa:0a, etc.
+			// In correct format. Let's just ensure it's fully in upper case for uniformity purposes.
+			normalizedMacs.push(mac.toUpperCase());
+		} else if( mac.match(/^[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}$/g) ) {
+		// aa11.bb22.33cc, etc.
+			// Convert to correct format.
+			mac = mac.replace(/(^[0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
+			normalizedMacs.push(mac.toUpperCase());
+		} else if( mac.match(/^[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}$/g) ) {
+		// 00-AA-B2-aa-Aa-0a, etc.
+			// Convert to correct format.
+			mac = mac.replace(/(^[0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
+			normalizedMacs.push(mac.toUpperCase());
+		}
+	}
+
+	return deduplicateMacs(normalizedMacs);
+}
+
 function getEndpointByMac(endpointMac, callback) {
 	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
 		// get ISE settings
@@ -126,11 +216,9 @@ function getEndpointByMac(endpointMac, callback) {
 		// This will handle response when it is returned (given the request is sent asynchronously)
 		xhr.onreadystatechange = function() {
 		    if (this.readyState == 4 && this.status == 200) {
-		    	//console.log(this);
 		        let resp = JSON.parse(this.response);
 		        let results = resp.ERSEndPoint;
 
-		        //console.log(results.mac + " has a UUID of " + results.id);
 		        callback(results);
 		    } else {
 		    	// handle errors
@@ -178,9 +266,8 @@ function moveEndpointToGroup(endpointMac, groupId) {
 
 			xhr.onreadystatechange = function () {
 			  if (this.readyState === 4 && this.status == 200) {
-			    console.log(this.responseText);
 			    resp = JSON.parse(this.responseText);
-			    console.log(resp.UpdatedFieldsList);
+
 			    try {
 			    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
 			    		throw "not moved";
@@ -215,36 +302,6 @@ function moveEndpointToGroup(endpointMac, groupId) {
 	});
 }
 
-function normalizeMac(mac) {
-	// The ISE API requires the MAC address be in the XX:XX:XX:XX:XX:XX format. 
-	// This function will return a MAC address in that format if a valid MAC is presented; otherwise,
-	// it will return false.
-	console.log(mac)
-	if( mac.match(/^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}$/g) ) {
-	// 00:AA:B2:aa:Aa:0a, etc.
-		console.log('matched: xx:xx:xx:xx:xx:xx');
-		// In correct format. Let's just ensure it's fully in upper case for uniformity purposes.
-		return mac.toUpperCase();
-	} else if( mac.match(/^[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}$/g) ) {
-	// aa11.bb22.33cc, etc.
-		// Convert to correct format.
-		console.log(mac + ' matched: xxxx.xxxx.xxxx');
-		mac = mac.replace(/(^[0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
-		console.log("Converted: " + mac.toUpperCase());
-		return mac.toUpperCase();
-	} else if( mac.match(/^[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}$/g) ) {
-	// 00-AA-B2-aa-Aa-0a, etc.
-		// Convert to correct format.
-		console.log(mac + ' matched: xx-xx-xx-xx-xx-xx');
-		mac = mac.replace(/(^[0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
-		console.log("Converted: " + mac.toUpperCase());
-		return mac.toUpperCase();
-	} else {
-	// Didn't match any valid format
-		return false
-	}
-}
-
 function notify(title, message, icon) {
 	// let's add .png to the passed icon string
 	// icon can be 'success' or 'fail'
@@ -258,6 +315,6 @@ function notify(title, message, icon) {
 	};
 
 	chrome.notifications.create(options, function() {
-		console.log("Notification done!");
+		return true;
 	});
 }
