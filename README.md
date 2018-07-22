@@ -8,8 +8,9 @@ A Google Chrome extension to help perform common tasks in Cisco ISE.
     2. [Setup the Extension](#setup-the-extension)
 4. [How to Use](#how-to-use)
     1. [Refresh Identity Group List](#refresh-identity-group-list)
-    2. [Valid MAC Address Formats](#valid-mac-address-formats)
-    3. [Invalid MAC Address Formats](#invalid-mac-address-formats)
+    2. [Support for Bulk MAC Address Handling](#support-for-bulk-mac-address-handling)
+    3. [Valid MAC Address Formats](#valid-mac-address-formats)
+    4. [Invalid MAC Address Formats](#invalid-mac-address-formats)
 5. [Feedback](#feedback)
 6. [Tested on](#tested-on)
 ## Overview
@@ -55,6 +56,12 @@ The context menu will appear only when text is selected. It should work on any w
 The identity groups listed in the context menu are pulled from ISE when you open Chrome. 
 
 If you need to refresh the menu, you can click on the extension button and click save on the settings window. This will restart the extension, refreshing the menu. You can also restart Chrome entirely to refresh the list. 
+
+### Support for Bulk MAC Address Handling
+As of version 0.3, the extensions supports handling of bulk endpoint move operations. This ultimately means that you can select a large blob of text (e.g. a page in the live logs) and it will ignore non-MAC address text. This is a very useful tool when performing bulk actions. 
+
+Unfortunately, due to limitations of the BULK Operations function in ISE, this are done individually; however, since they run asynchronously and are completely quite quickly. You will be kept up to date by progress bar for the whole operation.
+
 ### Valid MAC Address Formats
 You will receive an error if the text you selected is not a valid MAC address.
 ```
