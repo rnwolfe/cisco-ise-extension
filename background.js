@@ -18,25 +18,25 @@ chrome.runtime.onInstalled.addListener(function() {
 
 chrome.contextMenus.onClicked.addListener(function(item) {
 	// what to do when menu item is clicked!
-	let selectedText = item.selectionText;
-	let endpointMacs = findMacAddresses(selectedText);
-
+	// get the group we're moving to
 	let newGroupId   = item.menuItemId
 
-	if( endpointMacs ) {
-		// normalize the mac addresses		
+	// get the selected text
+	let selectedText = item.selectionText;
+
+	// find all of the MAC addressess in the selection
+	let endpointMacs = findMacAddresses(selectedText);
+
+	// if endpoints were found
+	if( endpointMacs.length > 0 ) {
+		// normalize the mac addresses (convert all to AA:BB:CC:11:22:33 format)
 		endpointMacs = normalizeMacs(endpointMacs);
 
 		// move the macs
-		for( mac in endpointMacs ) {
-			mac = endpointMacs[mac];
-
-			moveEndpointToGroup(mac, newGroupId);
-		}
+		moveEndpointsToGroup(endpointMacs, newGroupId);
 	} else {
-		notify("Not a valid MAC address format.", "The text you selected did not match an accepted MAC address format. The MAC address must be in one of the following formats: xx:xx:xx:xx:xx:xx, xx-xx-xx-xx-xx-xx, xxxx.xxxx.xxxx", "fail");
+		notify("No MAC addresses found the selection.", "The text you selected did not contain any accepted MAC address formats. The MAC address must be in one of the following formats: xx:xx:xx:xx:xx:xx, xx-xx-xx-xx-xx-xx, xxxx.xxxx.xxxx", "fail");
 	}
-
 });
 
 
@@ -126,24 +126,26 @@ function findMacAddresses(selectedText) {
 	colonNotation  = RegExp('[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}', 'g');
 	dashNotation   = RegExp('[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}', 'g');
 	dottedNotation = RegExp('[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}', 'g');
-	
-	if( colonNotation.test(selectedText) || dashNotation.test(selectedText) || dottedNotation.test(selectedText) ) {
+
+	// using string.match(regex) instead of regex.test(string) due to performance:
+	// see https://jsperf.com/test-vs-match-regex
+	if( selectedText.match(colonNotation) || selectedText.match(dashNotation) || selectedText.match(dottedNotation) ) {
 		// valid MACs were found!
 		let matches = new Array();
 
 		// we have to only do the match if it matches, otherwise returns null value to array
 		// this is "simpler" than writing loop to remove all null values from array
-		if( colonNotation.test(selectedText) ) {
+		if( selectedText.match(colonNotation) ) {
 		// 00:AA:B2:aa:Aa:0a, etc.
 			matches = matches.concat(selectedText.match(colonNotation));
 		}
 
-		if( dashNotation.test(selectedText) ) {
+		if( selectedText.match(dashNotation) ) {
 		// 00-AA-B2-aa-Aa-0a, etc.
 			matches = matches.concat(selectedText.match(dashNotation));
 		}
 
-		if( dottedNotation.test(selectedText) ) {
+		if( selectedText.match(dottedNotation) ) {
 		// aa11.bb22.33cc, etc.
 			matches = matches.concat(selectedText.match(dottedNotation));
 		}
@@ -180,21 +182,25 @@ function normalizeMacs(macs) {
 
 	let normalizedMacs = new Array();
 
+	colonNotation  = RegExp('^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}$', 'g');
+	dashNotation   = RegExp('(^[0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}$)', 'g');
+	dottedNotation = RegExp('(^[0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2}$)', 'g');
+
 	for( mac in uniqueMacs ) {
 		mac = uniqueMacs[mac];
-		if( mac.match(/^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}$/g) ) {
+		if( mac.match(colonNotation) ) {
 		// 00:AA:B2:aa:Aa:0a, etc.
 			// In correct format. Let's just ensure it's fully in upper case for uniformity purposes.
 			normalizedMacs.push(mac.toUpperCase());
-		} else if( mac.match(/^[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}$/g) ) {
-		// aa11.bb22.33cc, etc.
-			// Convert to correct format.
-			mac = mac.replace(/(^[0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
-			normalizedMacs.push(mac.toUpperCase());
-		} else if( mac.match(/^[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}$/g) ) {
+		} else if( mac.match(dashNotation) ) {
 		// 00-AA-B2-aa-Aa-0a, etc.
 			// Convert to correct format.
-			mac = mac.replace(/(^[0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2}$)/, "$1:$2:$3:$4:$5:$6")
+			mac = mac.replace(dashNotation, "$1:$2:$3:$4:$5:$6")
+			normalizedMacs.push(mac.toUpperCase());
+		} else if( mac.match(dottedNotation) ) {
+		// aa11.bb22.33cc, etc.
+			// Convert to correct format.
+			mac = mac.replace(dottedNotation, "$1:$2:$3:$4:$5:$6")
 			normalizedMacs.push(mac.toUpperCase());
 		}
 	}
@@ -241,80 +247,164 @@ function getEndpointByMac(endpointMac, callback) {
 	});
 }
 
-function moveEndpointToGroup(endpointMac, groupId) {
-	// get endpoint UUID
-	getEndpointByMac(endpointMac, function(result) {
-		
-		endpointId = result.id;
-		endpointMac = result.mac;
+function moveEndpointsToGroup(endpointMacs, groupId) {
+	// endpointMacs is an array, even if only a single mac
 
-		chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
-			var ise = getIseInfo(result);
+	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+		var ise = getIseInfo(result);
 
-			let updateURL = ise['url'] + "endpoint/" + endpointId;
+		// check if this is a bulk update (e.g. >1 endpoint) 
+		if( endpointMacs.length > 1 ) {
+			// if so, set flag for use later in function
+			var isBulkMove = true;
 
-			// build data payload for REST API PUT request
-			var data = JSON.stringify({
-			  "ERSEndPoint": {
-			    "id": endpointId,
-			    "groupId": groupId,
-			    "staticGroupAssignment": true
-			  }
+			// get and set needed values to calculate progress
+			var currentComplete = 0;
+			var totalEndpoints = endpointMacs.length;
+
+			// store the id of the progress we are creating in a var for later reference
+			var progressBar = "endpointMoveProgressBar";
+
+			// and begin progress bar notification
+			notify("Bulk Move Status", "Initiating bulk move..", "icon128", "progress", progressBar);
+		}
+
+		for( mac in endpointMacs ) {
+			endpointMac = endpointMacs[mac];
+
+			// get endpoint UUID
+			getEndpointByMac(endpointMac, function(result) {
+				
+				endpointId = result.id;
+				//endpointMac = result.mac;
+				console.log(result);
+
+				let updateURL = ise['url'] + "endpoint/" + endpointId;
+
+				// build data payload for REST API PUT request
+				var data = JSON.stringify({
+				  "ERSEndPoint": {
+				    "id": endpointId,
+				    "groupId": groupId,
+				    "staticGroupAssignment": true
+				  }
+				});
+
+				var xhr = new XMLHttpRequest();
+
+				xhr.open("PUT", updateURL);
+				xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
+				xhr.setRequestHeader("Accept", "application/json");
+				xhr.setRequestHeader("content-type", "application/json");
+
+				xhr.send(data);
+				xhr.onreadystatechange = function () {
+					if ( this.readyState === 4 ) {
+					  	if( this.status === 200 ) {
+						    resp = JSON.parse(this.responseText);
+						    console.log(resp);
+						    try {
+						    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
+						    		throw "not moved";
+						    	} else {
+						    		// Now that we're handling in bulk, the endpointMac var doesn't necessarily 
+						    		// match the MAC of the item handled by the response due to the async nature of XHR.
+						    		// endpointMac will always be equal to the value that it was for the last SENT request
+						    		// since most HTTP PUTs were sent prior to receiving responses. For larger batches, it may 
+						    		// get some responses back before sending all of them.
+						    		// 
+						    		// I digress... short story is that we have to handle notifications differently for single 
+						    		// MAC moves than we do for bulk moves. 
+						    		// This is also true because we're doing progress stlye notifications for bulk moves.
+
+						    		if( isBulkMove ) {
+						    			currentComplete = currentComplete + 1;
+						    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();
+						    			let message = "Moving endpoint " + currentComplete + " out of " + totalEndpoints + ".";
+						    			console.log("Moved endpoint, status: " + status);
+						    			notify("Bulk Move Status", message, "icon128", "progress", progressBar, status)
+						    		} else {
+							    		notify("Success!", "Endpoint was moved successfully!", "success");
+						    		}
+						    	}
+						    } catch(error) {
+					    		if( isBulkMove ) {
+					    			currentComplete = currentComplete + 1;
+
+					    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();						    			
+					    			let message = "Moving endpoint " + currentComplete + " out of " + totalEndpoints + ".";
+
+					    			notify("Bulk Move Status", message, "icon128", "progress", progressBar, status)
+							    	notify("Error!", "Endpoint " + error + ". This is most commonly due to the endpoint already being in the target group.", "fail");
+					    		} else {
+							    	notify("Error!", "Endpoint " + error + ". This is most commonly due to the endpoint already being in the target group.", "fail");
+					    		}
+						    }
+
+						// handle non-200 status codes
+					  	// at this point, a 404 should never really occur given we already 
+					  	// looked up the endpoint for it's UUID, if it didn't exist, the error already occurred.
+
+					  	// The primary errors we'd expect here are authorization or other API errors. A user may be 
+					  	// authorized to read groups/endpoint info but not to modify it. This could also occur if a user's
+					  	// permissions changed after they loaded their existing session.
+						} else if( this.status === 401 ) {
+							notify("Error!", "Configured user does not have required permissions to modify endpoint.", "fail");
+						} else if( this.status === 500 ) {
+							notify("Error!", "Received server error from ISE for one endpoint request. This may be a rate-limit issue.", "fail");
+						} else if( this.status === 0 ) {
+							notify("Error!", "Received no response from server.", "fail");
+						}
+					}
+				};
 			});
-
-			var xhr = new XMLHttpRequest();
-
-			xhr.onreadystatechange = function () {
-			  if (this.readyState === 4 && this.status == 200) {
-			    resp = JSON.parse(this.responseText);
-
-			    try {
-			    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
-			    		throw "not moved";
-			    	} else {
-			    		notify("Success!", endpointMac + " was moved successfully!", "success");
-			    	}
-			    } catch(error) {
-			    	notify("Error!", endpointMac + " " + error + ". This is most commonly due to the endpoint already being in the target group.", "fail");
-			    }
-			  } else {
-			  	// handle non-200 status codes
-			  	// at this point, a 404 should never really occur given we already 
-			  	// looked up the endpoint for it's UUID, if it didn't exist, the error already occurred.
-
-			  	// The primary errors we'd expect here are authorization or other API errors. A user may be 
-			  	// authorized to read groups/endpoint info but not to modify it. This could also occur if a user's
-			  	// permissions changed after they loaded their existing session.
-
-			  	if( this.readyState === 4 && this.status === 401 ) {
-			  		notify("Error!", "Configured user does not have required permissions to modify endpoint.", "fail");
-			  	}
-			  }
-			};
-
-			xhr.open("PUT", updateURL);
-			xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
-			xhr.setRequestHeader("Accept", "application/json");
-			xhr.setRequestHeader("content-type", "application/json");
-
-			xhr.send(data);
-		});
+		}
 	});
 }
 
-function notify(title, message, icon) {
+function notify(title, message, icon = "icon128", type = "basic", id = null, progress = 0) {
 	// let's add .png to the passed icon string
 	// icon can be 'success' or 'fail'
 	icon = "images/" + icon + ".png";
+	progress = parseInt(progress);
 
-	var options = {
-		type: "basic", 
-		title: title, 
-		message: message,
-		iconUrl: icon
-	};
+	if( type == 'progress' ) {
+		if( progress == 0 ) {
+			console.log("create progress bar");
+			return chrome.notifications.create(id, {
+			    type: type,
+			    iconUrl: icon,
+			    title: title,
+			    message: message || "Initiating bulk move..",
+			    progress: progress
+			});
+		} else if ( progress > 0 && progress < 100 ) {
+			console.log("Updating status to " + progress);
 
-	chrome.notifications.create(options, function() {
-		return true;
-	});
+			chrome.notifications.update(id, {
+			    progress: progress,
+			    message: message || "Moving endpoints (" + progress + "%)"
+			});
+		} else if ( progress == 100 ) {
+			console.log("Updating status to " + progress);
+
+			chrome.notifications.update(id, {
+			    progress: progress,
+			    message: "Done!"
+			});
+
+		}
+	} else if ( type == 'basic' ) {
+		var options = {
+			type: type, 
+			title: title, 
+			message: message,
+			iconUrl: icon
+		};
+
+		chrome.notifications.create(options, function() {
+			return true;
+		});
+	}
 }
+
