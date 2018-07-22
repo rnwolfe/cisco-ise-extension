@@ -125,7 +125,7 @@ function buildMenu(menuItems) {
 function findMacAddresses(selectedText) {
 	colonNotation  = RegExp('[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}', 'g');
 	dashNotation   = RegExp('[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}-[0-9A-Fa-f]{2}', 'g');
-	dottedNotation = RegExp('[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}', 'g');
+	dottedNotation = RegExp('[0-9A-Fa-f]{4}.[0-9A-Fa-f]{4}.[0-9A-Fa-f]{4}', 'g');
 
 	// using string.match(regex) instead of regex.test(string) due to performance:
 	// see https://jsperf.com/test-vs-match-regex
@@ -183,7 +183,7 @@ function normalizeMacs(macs) {
 	let normalizedMacs = new Array();
 
 	colonNotation  = RegExp('^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}$', 'g');
-	dashNotation   = RegExp('(^[0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}$)', 'g');
+	dashNotation   = RegExp('(^[0-9A-Fa-f]{2})([0-9A-Fa-f]{2}).([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}).([0-9A-Fa-f]{2})([0-9A-Fa-f]{2}$)', 'g');
 	dottedNotation = RegExp('(^[0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2})-([0-9A-Fa-f]{2}$)', 'g');
 
 	for( mac in uniqueMacs ) {
