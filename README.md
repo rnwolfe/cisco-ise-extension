@@ -30,9 +30,9 @@ While this extension was initially built to be used with Google Chrome, I came t
 **Note**: the main difference for Firefox is its lack of support for the progress type notification (see #22). For this reason, bulk updates in Fierfox have to use a series of `basic` type notifications which are not as visually pleasing as they appear to flash due to the rapid change in status; however, this was the best way I saw to implement it. The final "Done!" notification is most noticeable as it persists for a few seconds at the end of the update operation. 
 ## How to Install
 ### Google Chrome
-For the official release, you can download the [ISE Assistant from the Chrome Web Store](https://chrome.google.com/webstore/detail/bgcgpgjpecloagakaainoamfaedknpol) updates will be provided via the Chrome Web Store. 
+For the official release, you can download the [ISE Assistant from the Chrome Web Store](https://chrome.google.com/webstore/detail/bgcgpgjpecloagakaainoamfaedknpol). Updates will be provided via the Chrome Web Store. 
 
-To run anything outside of the `master` branch, it will have to be loaded as an "unpacked extension." To do so:
+To run anything outside of the `master` branch, it will have to be loaded as an "unpacked extension" (at your own risk). To do so:
 
 1. Clone this repo: `git clone https://github.com/rnwolfe/ise-extension-chrome.git`
 2. Checkout the desired branch: `git checkout <desired_branch>`
@@ -42,7 +42,9 @@ To run anything outside of the `master` branch, it will have to be loaded as an 
 6. Select the folder the repository was cloned into.
 
 ### Mozilla Firefox
-I have yet to publish to the official Firefox extension library. I will update this when I do. For now, you can install in developer mode:
+For the official release, you can download the [ISE Assistant from the Add-ons site](https://addons.mozilla.org/en-US/firefox/addon/ise-assistant/). Updates will be provided via Firefox Add-ons.
+
+To run anything outside of the `master` branch, it will have to be loaded in developer mode (at your own risk):
 
 1. Clone this repo: `git clone https://github.com/rnwolfe/ise-extension-chrome.git`
 2. Go to `about:debugging#addons` in Firefox
