@@ -1,8 +1,11 @@
 # Cisco ISE Assistant
-A Google Chrome extension to help perform common tasks in Cisco ISE.
+A Google Chrome and Firefox extension to help perform common tasks in Cisco ISE.
 ## Table of Contents
 1. [Overview](#overview)
+2. [Browser Support](#browser-support)
 2. [How to Install](#how-to-install)
+	1. [Google Chrome](#google-chrome)
+	2. [Mozilla Firefox](#mozilla-firefox)
 3. [Setting up](#setting-up)
     1. [Enable ISE ERS API](#enable-ise-ers-api)
     2. [Setup the Extension](#setup-the-extension)
@@ -21,15 +24,31 @@ Commonly, when operating a Cisco ISE deployment, I found myself staring at lines
 For the love of god, I just wanted to be able to right click on a MAC address and say "add to identity group XYZ"! Well, this extension does just that. You highlight a MAC address, right click to present a list of Endpoint Identity Groups, and select the one you want. It fires off some API calls and it's done! You get a nice little notification stating as much after it's done!
 
 Eventually, I'd like to add more functionality to this extension, but, as of now, this is the initial need and only feature.
-## How to install
-Right now, this is in a purely development state and will have to be loaded as an "unpacked extension." To do so, clone this repository:
+## Browser Support
+While this extension was initially built to be used with Google Chrome, I came to notice that Firefox supports most of the needed `chrome` namespace functionality in their own APIs. So, as of v0.4, the extension runs well in both Google Chrome and Mozilla Firefox. 
 
-1. `git clone https://github.com/rnwolfe/ise-extension-chrome.git`
-2. Go to `chrome://extensions` in your Chrome browser address bar. 
-3. Enable developer mode. 
-4. Click "Load unpacked extension"
-5. Select the folder the repository was cloned into.
+**Note**: the main difference for Firefox is its lack of support for the progress type notification (see #22). For this reason, bulk updates in Fierfox have to use a series of `basic` type notifications which are not as visually pleasing as they appear to flash due to the rapid change in status; however, this was the best way I saw to implement it. The final "Done!" notification is most noticeable as it persists for a few seconds at the end of the update operation. 
+## How to Install
+### Google Chrome
+For the official release, you can download the [ISE Assistant from the Chrome Web Store](https://chrome.google.com/webstore/detail/bgcgpgjpecloagakaainoamfaedknpol) updates will be provided via the Chrome Web Store. 
 
+To run anything outside of the `master` branch, it will have to be loaded as an "unpacked extension." To do so:
+
+1. Clone this repo: `git clone https://github.com/rnwolfe/ise-extension-chrome.git`
+2. Checkout the desired branch: `git checkout <desired_branch>`
+3. Go to `chrome://extensions` in your Chrome browser address bar. 
+4. Enable **Developer Mode**. 
+5. Click **Load unpacked extension**
+6. Select the folder the repository was cloned into.
+
+### Mozilla Firefox
+I have yet to publish to the official Firefox extension library. I will update this when I do. For now, you can install in developer mode:
+
+1. Clone this repo: `git clone https://github.com/rnwolfe/ise-extension-chrome.git`
+2. Go to `about:debugging#addons` in Firefox
+3. Check "Enable add-on debugging" 
+4. Click **Load Temporary Add-On**
+5. Select a file from the cloned directory.
 ## Setting up
 ### Enable ISE ERS API
 In order to operate, the extension uses the ISE External RESTful Services API. By default, this needs to be enabled in Cisco ISE.
@@ -89,6 +108,7 @@ As of this commit, I have only tested this using:
 
 - Windows 10 
 - Google Chrome Version 67.0.3396.99
+- Firefox Quantum 61.0.1 (64-bit)
 - Cisco ISE 2.4 
 
 As this uses the Chrome Extension API, there should be no reason it doesn't work on other operating systems. Additionally, I don't believe there are significant API changes that would prevent this from working on any ISE 2.x version, I can't confirm it will work at this time. 

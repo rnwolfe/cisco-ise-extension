@@ -366,32 +366,70 @@ function notify(title, message, icon = "icon128", type = "basic", id = null, pro
 	icon = "images/" + icon + ".png";
 	progress = parseInt(progress);
 
+	// chrome support progress type notifications, firefox does not
+	// for compatability purposes, we need to check if firefox so we can use basic notifications instead
+
 	if( type == 'progress' ) {
-		if( progress == 0 ) {
-			console.log("create progress bar");
-			return chrome.notifications.create(id, {
-			    type: type,
-			    iconUrl: icon,
-			    title: title,
-			    message: message || "Initiating bulk move..",
-			    progress: progress
-			});
-		} else if ( progress > 0 && progress < 100 ) {
-			console.log("Updating status to " + progress);
-
-			chrome.notifications.update(id, {
-			    progress: progress,
-			    message: message || "Moving endpoints (" + progress + "%)"
-			});
-		} else if ( progress == 100 ) {
-			console.log("Updating status to " + progress);
-
-			chrome.notifications.update(id, {
-			    progress: progress,
-			    message: "Done!"
-			});
-
+		if( typeof browser == "undefined") {
+			var browserName = "chrome";
+		} else {
+			browserName = "firefox";
 		}
+
+		if( browserName == "firefox" ) {
+
+			if( progress == 0 ) {
+				console.log("create progress bar");
+				chrome.notifications.create(id, {
+				    type: "basic",
+				    iconUrl: icon,
+				    title: title,
+				    message: message || "Initiating bulk move..",
+				});
+			} else if ( progress > 0 && progress < 100 ) {
+				console.log("Updating status to " + progress);
+				chrome.notifications.create(id, {
+				    type: "basic",
+				    iconUrl: icon,
+				    title: title,
+				    message: message || "Moving endpoints (" + progress + "%)"
+				});
+			} else if ( progress == 100 ) {
+				console.log("Updating status to " + progress);
+				chrome.notifications.create(id, {
+				    type: "basic",
+				    iconUrl: icon,
+				    title: title,
+				    message: "Done!"
+				});
+			}
+		} else if ( browserName == "chrome" ) {
+			if( progress == 0 ) {
+				console.log("create progress bar");
+				chrome.notifications.create(id, {
+				    type: type,
+				    iconUrl: icon,
+				    title: title,
+				    message: message || "Initiating bulk move..",
+				    progress: progress
+				});
+			} else if ( progress > 0 && progress < 100 ) {
+				console.log("Updating status to " + progress);
+
+				chrome.notifications.update(id, {
+				    progress: progress,
+				    message: message || "Moving endpoints (" + progress + "%)"
+				});
+			} else if ( progress == 100 ) {
+				console.log("Updating status to " + progress);
+
+				chrome.notifications.update(id, {
+				    progress: progress,
+				    message: "Done!"
+				});
+			}
+		}
+
 	} else if ( type == 'basic' ) {
 		var options = {
 			type: type, 
