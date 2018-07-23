@@ -2,7 +2,7 @@
 	"manifest_version": 2,
 	"name": "ISE Assistant",
 	"description": "An assistant extension for Cisco ISE to streamline common operational tasks.",
-	"version": "0.3",
+	"version": "0.3.3",
 	"author": "Ryan Wolfe, Iron Bow Technologies (ryan.wolfe@ironbow.com)",
 	"options_page": "options.html",
 	"permissions": [
