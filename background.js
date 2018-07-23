@@ -1,19 +1,17 @@
 // Get list of Identity Groups on install
-chrome.runtime.onInstalled.addListener(function() {
-	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
-		var ise = getIseInfo(result);
+chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+	var ise = getIseInfo(result);
 
-		// let's fire the canons
-		getGroupsFromIse(ise, function(result) {
-			groups = result;
+	// let's fire the canons
+	getGroupsFromIse(ise, function(result) {
+		groups = result;
 
-			buildMenu(groups);
-		});
-
+		buildMenu(groups);
 	});
 
-	console.log("ISE Assistant is running!");
 });
+
+console.log("ISE Assistant is running!");
 
 
 chrome.contextMenus.onClicked.addListener(function(item) {

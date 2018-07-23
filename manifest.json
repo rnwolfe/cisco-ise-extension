@@ -5,6 +5,8 @@
 	"options_ui": {
 		"page": "options.html"
 	},
+	"description": "An assistant extension for Cisco ISE to streamline common operational tasks.",
+	"author": "Ryan Wolfe, Iron Bow Technologies (ryan.wolfe@ironbow.com)",
 	"permissions": [
 		"contextMenus",
 		"storage",

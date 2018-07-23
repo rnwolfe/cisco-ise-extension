@@ -77,9 +77,11 @@ The identity groups listed in the context menu are pulled from ISE when you open
 If you need to refresh the menu, you can click on the extension button and click save on the settings window. This will restart the extension, refreshing the menu. You can also restart Chrome entirely to refresh the list. 
 
 ### Support for Bulk MAC Address Handling
-As of version 0.3, the extensions supports handling of bulk endpoint move operations. This ultimately means that you can select a large blob of text (e.g. a page in the live logs) and it will ignore non-MAC address text. This is a very useful tool when performing bulk actions. 
+As of version 0.3, the extension supports handling of bulk endpoint move operations. This ultimately means that you can select a large blob of text (e.g. a page in the live logs) and it will ignore non-MAC address text. This is a very useful tool when performing bulk actions. 
 
-Unfortunately, due to limitations of the BULK Operations function in ISE, this are done individually; however, since they run asynchronously and are completely quite quickly. You will be kept up to date by progress bar for the whole operation.
+Unfortunately, due to limitations of the BULK Operations function in the ISE ERS API, these are done as individual calls; however, since they run asynchronously, they are completed quickly. A progress bar will be displayed to give status of the bulk move.
+
+I tested with up to 1096 endpoints in a single bulk move. The total operations took right at 10 minutes, and had 4 failures (0.36%) due to the server being "inaccessible" which may have been more of an overloading the API issue. At this time, no report of success vs failure is provided outside of a generic failure alert; however, this will likely be added in a future version.
 
 ### Valid MAC Address Formats
 You will receive an error if the text you selected is not a valid MAC address.
