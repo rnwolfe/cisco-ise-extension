@@ -275,7 +275,6 @@ function moveEndpointsToGroup(endpointMacs, groupId) {
 				
 				endpointId = result.id;
 				//endpointMac = result.mac;
-				console.log(result);
 
 				let updateURL = ise['url'] + "endpoint/" + endpointId;
 
@@ -300,7 +299,7 @@ function moveEndpointsToGroup(endpointMacs, groupId) {
 					if ( this.readyState === 4 ) {
 					  	if( this.status === 200 ) {
 						    resp = JSON.parse(this.responseText);
-						    console.log(resp);
+
 						    try {
 						    	if( resp.UpdatedFieldsList.updatedField.length == 0 ) {
 						    		throw "not moved";
@@ -319,7 +318,7 @@ function moveEndpointsToGroup(endpointMacs, groupId) {
 						    			currentComplete = currentComplete + 1;
 						    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();
 						    			let message = "Moving endpoint " + currentComplete + " out of " + totalEndpoints + ".";
-						    			console.log("Moved endpoint, status: " + status);
+
 						    			notify("Bulk Move Status", message, "icon128", "progress", progressBar, status)
 						    		} else {
 							    		notify("Success!", "Endpoint was moved successfully!", "success");
@@ -379,7 +378,6 @@ function notify(title, message, icon = "icon128", type = "basic", id = null, pro
 		if( browserName == "firefox" ) {
 
 			if( progress == 0 ) {
-				console.log("create progress bar");
 				chrome.notifications.create(id, {
 				    type: "basic",
 				    iconUrl: icon,
@@ -387,7 +385,6 @@ function notify(title, message, icon = "icon128", type = "basic", id = null, pro
 				    message: message || "Initiating bulk move..",
 				});
 			} else if ( progress > 0 && progress < 100 ) {
-				console.log("Updating status to " + progress);
 				chrome.notifications.create(id, {
 				    type: "basic",
 				    iconUrl: icon,
@@ -395,7 +392,6 @@ function notify(title, message, icon = "icon128", type = "basic", id = null, pro
 				    message: message || "Moving endpoints (" + progress + "%)"
 				});
 			} else if ( progress == 100 ) {
-				console.log("Updating status to " + progress);
 				chrome.notifications.create(id, {
 				    type: "basic",
 				    iconUrl: icon,
@@ -405,7 +401,6 @@ function notify(title, message, icon = "icon128", type = "basic", id = null, pro
 			}
 		} else if ( browserName == "chrome" ) {
 			if( progress == 0 ) {
-				console.log("create progress bar");
 				chrome.notifications.create(id, {
 				    type: type,
 				    iconUrl: icon,
@@ -414,15 +409,11 @@ function notify(title, message, icon = "icon128", type = "basic", id = null, pro
 				    progress: progress
 				});
 			} else if ( progress > 0 && progress < 100 ) {
-				console.log("Updating status to " + progress);
-
 				chrome.notifications.update(id, {
 				    progress: progress,
 				    message: message || "Moving endpoints (" + progress + "%)"
 				});
 			} else if ( progress == 100 ) {
-				console.log("Updating status to " + progress);
-
 				chrome.notifications.update(id, {
 				    progress: progress,
 				    message: "Done!"
