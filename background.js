@@ -12,12 +12,13 @@ chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], functio
 });
 
 console.log("ISE Assistant is running!");
-
+var moveGroupMenu = null;
+var coaMenu = null;
 
 chrome.contextMenus.onClicked.addListener(function(item) {
 	// what to do when menu item is clicked!
-	// get the group we're moving to
-	let newGroupId   = item.menuItemId
+	//console.log(item);
+	//console.log(parentMenu);
 
 	// get the selected text
 	let selectedText = item.selectionText;
@@ -30,11 +31,21 @@ chrome.contextMenus.onClicked.addListener(function(item) {
 		// normalize the mac addresses (convert all to AA:BB:CC:11:22:33 format)
 		endpointMacs = normalizeMacs(endpointMacs);
 
-		// move the macs
-		moveEndpointsToGroup(endpointMacs, newGroupId);
+		// was this a move click or a COA click?
+		if( item.parentMenuItemId == moveGroupMenu ) {
+			console.log("Moving an item...");
+			// get the group we're moving to
+			let newGroupId   = item.menuItemId
+			
+			// move the macs
+			moveEndpointsToGroup(endpointMacs, newGroupId);
+		} else if( item.parentMenuItemId == coaMenu ) {
+			performCoa(endpointMacs, item.menuItemId);
+		}
 	} else {
 		notify("No MAC addresses found the selection.", "The text you selected did not contain any accepted MAC address formats. The MAC address must be in one of the following formats: xx:xx:xx:xx:xx:xx, xx-xx-xx-xx-xx-xx, xxxx.xxxx.xxxx", "fail");
 	}
+
 });
 
 
@@ -61,14 +72,15 @@ function getIseInfo(result) {
     	console.log("Please define username and password settings."); 
     }
     
-    ise['url'] = "https://" + ise['server'] + ":" + ise['port'] + "/ers/config/";
+    ise['ersUrl'] = "https://" + ise['server'] + ":" + ise['port'] + "/ers/config/";
+    ise['mntUrl'] = "https://" + ise['server'] + "/admin/API/mnt/";
 
     return ise;
 }
 
 function getGroupsFromIse(ise, callback) {
 	// Define ISE Parameters
-	let groupsURL = ise['url'] + "endpointgroup"
+	let groupsURL = ise['ersUrl'] + "endpointgroup"
 
 	// Create HTTP request
 	let xhr = new XMLHttpRequest();
@@ -98,8 +110,8 @@ function getGroupsFromIse(ise, callback) {
 }
 
 function buildMenu(menuItems) {
-	// create parent menu object
-	var parent = chrome.contextMenus.create({"title": "Add to Identity Group..", "contexts": ["selection"]});
+	// create parent menu object for moving endpoints to a different group
+	moveGroupMenu = chrome.contextMenus.create({"title": "Add to Identity Group..", "contexts": ["selection"]});
 
 	// get ID/name of each group in JSON response
 	groups = menuItems.resources;
@@ -112,11 +124,40 @@ function buildMenu(menuItems) {
 		chrome.contextMenus.create({
 			id: groupId,
 			title: groupName, 
-			parentId: parent, 
+			parentId: moveGroupMenu, 
 			contexts: ["selection"]
 		});
 	}
 
+	// define COA types
+	coaTypes = {  
+	   "reauth":{  
+	      "id": "coa-reauth",
+	      "name": "..with reauth"
+	   },
+	   "port-bounce":{  
+	      "id": "coa-bounce",
+	      "name": "..with port bounce"
+	   },
+	   "port-shutdown":{  
+	      "id": "coa-shutdown",
+	      "name": "..with port shutdown"
+	   }
+	}
+	// create parent menu object for performing COAs
+	coaMenu = chrome.contextMenus.create({"title": "Perform ISE CoA..", "contexts": ["selection"]});
+
+	for( let coa in coaTypes ) {
+		coa = coaTypes[coa];
+		chrome.contextMenus.create({
+			id: coa.id,
+			title: coa.name, 
+			parentId: coaMenu, 
+			contexts: ["selection"]
+		});
+	}
+
+	// create child menu item for each COA type
 	console.log("Menu built!");
 }
 
@@ -212,7 +253,7 @@ function getEndpointByMac(endpointMac, callback) {
 		var ise = getIseInfo(result);
 
 		// Specify URL for API call
-		let endpointInfoURL = ise['url'] + "endpoint/name/" + endpointMac;
+		let endpointInfoURL = ise['ersUrl'] + "endpoint/name/" + endpointMac;
 
 		// Create HTTP request
 		let xhr = new XMLHttpRequest();
@@ -276,7 +317,7 @@ function moveEndpointsToGroup(endpointMacs, groupId) {
 				endpointId = result.id;
 				//endpointMac = result.mac;
 
-				let updateURL = ise['url'] + "endpoint/" + endpointId;
+				let updateURL = ise['ersUrl'] + "endpoint/" + endpointId;
 
 				// build data payload for REST API PUT request
 				var data = JSON.stringify({
@@ -357,6 +398,233 @@ function moveEndpointsToGroup(endpointMacs, groupId) {
 			});
 		}
 	});
+}
+
+function performCoa(endpointMacs, coaType) {
+	// endpointMacs is an array, even if only a single mac
+	console.log("Performing CoA...");
+	console.log(endpointMacs);
+	console.log(coaType);
+
+
+	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+		var ise = getIseInfo(result);
+
+		// check if this is a bulk update (e.g. >1 endpoint) 
+		if( endpointMacs.length > 1 ) {
+			// if so, set flag for use later in function
+			var isBulk = true;
+
+			// get and set needed values to calculate progress
+			var currentComplete = 0;
+			var totalEndpoints = endpointMacs.length;
+
+			// store the id of the progress we are creating in a var for later reference
+			var progressBar = "endpointCoaProgressBar";
+
+			// and begin progress bar notification
+			notify("Bulk CoA Status", "Initiating bulk CoA..", "icon128", "progress", progressBar);
+		}
+
+		for( mac in endpointMacs ) {
+			endpointMac = endpointMacs[mac];
+
+			// first, we have to get the active session info for that MAC to perform the CoA
+			let sessionInfoURL = ise['mntUrl'] + "Session/MACAddress/" + endpointMac;
+
+			var xhr = new XMLHttpRequest();
+
+			xhr.open("GET", sessionInfoURL);
+			xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
+
+			xhr.send();
+			xhr.onreadystatechange = function () {
+				if ( this.readyState === 4 ) {
+				  	if( this.status === 200 ) {
+				  		// unfortunately, the ISE API only returns XML here. Code is not as graceful without JSON.
+				  		let parser = new DOMParser();
+				  		let resp = parser.parseFromString(this.responseText, "text/xml");
+				  		console.log(resp);
+				    	
+				    	if( ! resp ) {
+				    		throw " session was not found.";
+				    	}
+
+					    try {
+					    	// what kind of CoA was requested, as they each have different URL targets
+					    	if( coaType == "coa-reauth") {
+					    		// perform coa-reauth
+					    		// get required information from active session
+						  		let iseNode = resp.getElementsByTagName("acs_server")[0].childNodes[0].nodeValue;
+						  		
+						  		// build the URL, the trailing /2 indicates to do a coa with rerun
+						  		let reauthURL = ise['mntUrl'] + "CoA/Reauth/" + iseNode + "/" + endpointMac + "/2";
+
+			  					var xhr = new XMLHttpRequest();
+
+								xhr.open("GET", reauthURL);
+								xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
+
+								xhr.send();
+								xhr.onreadystatechange = function () {
+									if ( this.readyState === 4 ) {
+									  	if( this.status === 200 ) {
+									  		coaResp = parser.parseFromString(this.responseText, "text/xml");
+									  		coaResult = coaResp.getElementsByTagName("results")[0].childNodes[0].nodeValue;
+									  		console.log(coaResult);
+										  	try {
+				  						    	if( coaResult != "true" ) {
+										    		throw "CoA failed.";
+										    	} else {
+										    		// Now that we're handling in bulk, the endpointMac var doesn't necessarily 
+										    		// match the MAC of the item handled by the response due to the async nature of XHR.
+										    		// endpointMac will always be equal to the value that it was for the last SENT request
+										    		// since most HTTP PUTs were sent prior to receiving responses. For larger batches, it may 
+										    		// get some responses back before sending all of them.
+										    		// 
+										    		// I digress... short story is that we have to handle notifications differently for single 
+										    		// MAC moves than we do for bulk moves. 
+										    		// This is also true because we're doing progress stlye notifications for bulk moves.
+
+										    		if( isBulk ) {
+										    			currentComplete = currentComplete + 1;
+										    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();
+										    			let message = "Endpoint CoA " + currentComplete + " out of " + totalEndpoints + ".";
+
+										    			notify("Bulk CoA Status", message, "icon128", "progress", progressBar, status)
+										    		} else {
+											    		notify("Success!", "Endpoint CoA was successful!", "success");
+										    		}
+										    	}
+										    } catch(error) {
+									    		if( isBulk ) {
+									    			currentComplete = currentComplete + 1;
+
+									    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();						    			
+									    			let message = "Moving endpoint " + currentComplete + " out of " + totalEndpoints + ".";
+
+									    			notify("Bulk CoA Status", message, "icon128", "progress", progressBar, status)
+											    	notify("Error!", "Endpoint " + error + ".", "fail");
+									    		} else {
+											    	notify("Error!", "Endpoint " + error + ".", "fail");
+									    		}
+										    }
+										} else if( this.status === 401 ) {
+											notify("Error!", "Configured user does not have required permissions.", "fail");
+										} else if( this.status === 500 ) {
+											notify("Error!", "Received server error from ISE for CoA request. This normally means an active session wasn't found.", "fail");
+										} else if( this.status === 0 ) {
+											notify("Error!", "Received no response from server.", "fail");
+										}
+									}
+								}
+					    	} else if ( coaType == 'coa-bounce' || coaType == 'coa-shutdown' ) {
+					    		// perform bounce/shutdown
+					    		// get required information from active session
+						  		let iseNode = resp.getElementsByTagName("acs_server")[0].childNodes[0].nodeValue;
+						  		let nasIpAddress = resp.getElementsByTagName("nas_ip_address")[0].childNodes[0].nodeValue;
+						  		let endpointIpAddress = resp.getElementsByTagName("framed_ip_address")[0].childNodes[0].nodeValue;
+						  		if( coaType == "coa-bounce" ) {
+						  			portOption = "1";
+						  		} else if( coaType == "coa-shutdown" ) {
+						  			portOption = "2";
+						  		}
+
+						  		// build the URL, the trailing /2 indicates to do a coa with rerun
+						  		let reauthURL = ise['mntUrl'] + "CoA/Disconnect/" + iseNode + "/" + endpointMac + "/" + portOption + "/" + nasIpAddress + "/" + endpointIpAddress;
+
+			  					var xhr = new XMLHttpRequest();
+
+								xhr.open("GET", reauthURL);
+								xhr.setRequestHeader("Authorization", "Basic " + ise['auth']);
+
+								xhr.send();
+								xhr.onreadystatechange = function () {
+									if ( this.readyState === 4 ) {
+									  	if( this.status === 200 ) {
+									  		coaResp = parser.parseFromString(this.responseText, "text/xml");
+									  		coaResult = coaResp.getElementsByTagName("results")[0].childNodes[0].nodeValue;
+									  		console.log(coaResult);
+										  	try {
+				  						    	if( coaResult != "true" ) {
+										    		throw "CoA failed.";
+										    	} else {
+										    		// Now that we're handling in bulk, the endpointMac var doesn't necessarily 
+										    		// match the MAC of the item handled by the response due to the async nature of XHR.
+										    		// endpointMac will always be equal to the value that it was for the last SENT request
+										    		// since most HTTP PUTs were sent prior to receiving responses. For larger batches, it may 
+										    		// get some responses back before sending all of them.
+										    		// 
+										    		// I digress... short story is that we have to handle notifications differently for single 
+										    		// MAC moves than we do for bulk moves. 
+										    		// This is also true because we're doing progress stlye notifications for bulk moves.
+
+										    		if( isBulk ) {
+										    			currentComplete = currentComplete + 1;
+										    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();
+										    			let message = "Endpoint CoA " + currentComplete + " out of " + totalEndpoints + ".";
+
+										    			notify("Bulk CoA Status", message, "icon128", "progress", progressBar, status)
+										    		} else {
+											    		notify("Success!", "Endpoint CoA was successful!", "success");
+										    		}
+										    	}
+										    } catch(error) {
+									    		if( isBulk ) {
+									    			currentComplete = currentComplete + 1;
+
+									    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();						    			
+									    			let message = "Moving endpoint " + currentComplete + " out of " + totalEndpoints + ".";
+
+									    			notify("Bulk CoA Status", message, "icon128", "progress", progressBar, status)
+											    	notify("Error!", "Endpoint " + error + ".", "fail");
+									    		} else {
+											    	notify("Error!", "Endpoint " + error + ".", "fail");
+									    		}
+										    }
+										} else if( this.status === 401 ) {
+											notify("Error!", "Configured user does not have required permissions.", "fail");
+										} else if( this.status === 500 ) {
+											notify("Error!", "Received server error from ISE for CoA request. This normally means an active session wasn't found.", "fail");
+										} else if( this.status === 0 ) {
+											notify("Error!", "Received no response from server.", "fail");
+										}
+									}
+								}
+					    	}
+					    } catch(error) {
+				    		if( isBulk ) {
+				    			currentComplete = currentComplete + 1;
+
+				    			let status = (( currentComplete / totalEndpoints ) * 100).toFixed();						    			
+				    			let message = "Moving endpoint " + currentComplete + " out of " + totalEndpoints + ".";
+
+				    			notify("Bulk CoA Status", message, "icon128", "progress", progressBar, status)
+						    	notify("Error!", "Endpoint " + error + ".", "fail");
+				    		} else {
+						    	notify("Error!", "Endpoint " + error + ".", "fail");
+				    		}
+					    }
+
+					// handle non-200 status codes
+				  	// at this point, a 404 should never really occur given we already 
+				  	// looked up the endpoint for it's UUID, if it didn't exist, the error already occurred.
+
+				  	// The primary errors we'd expect here are authorization or other API errors. A user may be 
+				  	// authorized to read groups/endpoint info but not to modify it. This could also occur if a user's
+				  	// permissions changed after they loaded their existing session.
+					} else if( this.status === 401 ) {
+						notify("Error!", "Configured user does not have required permissions.", "fail");
+					} else if( this.status === 500 ) {
+						notify("Error!", "Received server error from ISE for CoA request. This normally means an active session wasn't found.", "fail");
+					} else if( this.status === 0 ) {
+						notify("Error!", "Received no response from server.", "fail");
+					}
+				}
+			};
+		}
+	});
+
 }
 
 function notify(title, message, icon = "icon128", type = "basic", id = null, progress = 0) {
