@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ISE Assistant Update Notes</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+    body {
+    	background-color: #F9F9F9;
+    }
+    .container {
+    	background-color: white;
+    	min-width: 500px;
+    	max-width: 800px;
+    	margin: 10px auto;
+    	padding: 5px;
+    }
+
+	.navbar-header {
+	    float: left;
+	    text-align: center;
+	    width: 100%;
+	}
+	.navbar-brand {
+		float:none;
+	}
+    .content {
+    	padding: 10px;
+    }
+    .indent {
+    	padding-left: 20px;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+	    <nav class="navbar navbar-primary bg-primary">
+	    	<div class="navbar-header">
+			      <div class="navbar-brand mb-0 h1 text-white">The ISE Assistant has been updated!</div>
+			</div>
+	    </nav>
+
+    	<div class="content">
+    		<p>The ISE Assistant has been updated to <strong>v0.4.1</strong>!</p>
+
+    		<p>As always, I hope that you find this extension useful. If you experience any issues, or would like to see something added to the extension. I also encourage positive feedback! Let me know if you've been getting use out of this, or just think it's great! Please contact me at <a href="mailto:rwolfe@ironbow.com?subject=ISE Assistant Feedback!">rwolfe@ironbow.com</a>.</p>
+
+			<p class="h4">Changes in v0.4.1</p>
+
+			<p class="h5">Support for CoA actions</p>
+			<p class="indent">Support has been added to allow for CoA actions to be called from a right-click menu for selected text. Session and CoA functionality are performed using the MNT API which is part of the MNT persona. So, please go to the ISE Assistant settings on the toolbar and ensure that the ISE MNT Node is defined to make use of this feature!</p>
+			<p class="indent">The supported CoA types are: session rerun, port bounce, and port shutdown. I make the assumption that you know what you're doing when you click one of these; however, I may add in a confirmation for the shutdown type to prevent accidental port shutdown when intending to click a different item.</p>
+
+			<p class="h5">Intro/Help page</p>
+			<p class="indent">Admittedly, this probably should've existed already. But, it didn't. It does now! You will also start receiving updates like this for updates. You can access it using the help page in the settings page. You can also check it out <a href="./intro.html" target="_blank">here</a>.</p>
+
+			<hr />
+			<p class="h4">Changes in v0.4.0</p>
+
+			<p class="h5">Support for bulk endpoint move</p>
+			<p class="indent">You can now move endpoints by selecting multiple MAC addresses. The text inbetween is irrelevant! The extension will sniff out anything that is a MAC address format for you. You could highlight a whole page of HTML if you want! This is particularly useful when highlighting multiple rows in Splunk, Cisco ISE, etc.</p>
+	    </div>
+	</div>
+
+    <script type="text/javascript" src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Welcome to the ISE Assistant</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+    body {
+    	background-color: #F9F9F9;
+    }
+    .container {
+    	background-color: white;
+    	min-width: 500px;
+    	max-width: 800px;
+    	margin: 10px auto;
+    	padding: 5px;
+    }
+
+	.navbar-header {
+	    float: left;
+	    text-align: center;
+	    width: 100%;
+	}
+	.navbar-brand {
+		float:none;
+	}
+    .content {
+    	padding: 10px;
+    }
+    .indent {
+    	padding-left: 20px;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+	    <nav class="navbar navbar-primary bg-primary">
+	    	<div class="navbar-header">
+			      <div class="navbar-brand mb-0 h1 text-white">Thank you for downloading the ISE Assistant!</div>
+			</div>
+	    </nav>
+
+    	<div class="content">
+    		<p>I hope that you find this extension useful. If you experience any issues, or would like to see something added to the extension. I also encourage positive feedback! Let me know if you've been getting use out of this, or just think it's great! Please contact me at <a href="mailto:rwolfe@ironbow.com?subject=ISE Assistant Feedback!">rwolfe@ironbow.com</a>.</p>
+
+			<p>Here are a few quick details to get you up and running.</p>
+
+			<p class="h5">Ensure that the Cisco ISE External RESTful Services (ERS) API is enabled.</p>
+			<p class="indent">This can be done by going to <strong>Administration > System > Settings > ERS Settings</strong>. Once there, please set <i>ERS Settings for Administration Node</i> to <i>Enable ERS for Read/Write</i>. If this is not enabled, the Identity Group move functionality will not work, and you will receive a connectivity error when the extension attempts to reach ISE.</p>
+
+			<p class="indent">The CoA capability does not require the ISE ERS API to be enabled, as it uses the MNT API.</p>
+
+			<p class="h5">Ensure that the specified user has access to the ERS API.</p>
+			<p class="indent">This can be done by going to ensuring the admin user is in the ERS Admin group. Admins in the Superuser group will also work.</p>
+			
+			<p class="h5">Ensure Cisco ISE has a trusted admin certificate.</p>
+			<p class="indent">The nature of the browser will not interact with a non-trusted website (e.g. a website with a untrusted certificate). If your browser does not trust the certificate you have, you may be able to work aroun this by going to the site within your current browser session and accepting the security warnings. This is pretty dependent on the browser settings as they receive updates, so your best bet (and generally best practice) is to use a trusted certificate.</p>
+
+			<p class="h5">Define the ISE Assistant settings.</p>
+			<p class="indent">Be sure to click on the ISE Assistant icon in the toolbar to define the needed parameters.</p>
+			<p class="indent">Note that the ISE PAN and ISE MNT nodes may often be the same node; however, since the ERS and MNT APIs are parts of different server roles, it is possible they may be different server. If this is not the case for your deployment, these fields should be the same value.</p>
+			
+			<p class="h5">If you need to refresh the Identity Group listing..</p>
+			<p class="indent">This can be done simply by clicking the extension icon in your toolbar and clicking save in the settings again. You can also restart your browser.</p>
+	    </div>
+	</div>
+
+    <script type="text/javascript" src="options.js"></script>
+  </body>
+</html>
