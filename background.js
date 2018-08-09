@@ -1,5 +1,13 @@
-// Get list of Identity Groups on install
-chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+/****************
+* Extension run
+****************/
+console.log("ISE Assistant is running!");
+var moveGroupMenu = null;
+var coaMenu = null;
+var manifestData = chrome.runtime.getManifest();
+
+// Get list of Identity Groups on run
+chrome.storage.local.get(['isePanNode', 'iseMntNode', 'isePort', 'iseUser', 'isePass'], function(result) {
 	var ise = getIseInfo(result);
 
 	// let's fire the canons
@@ -11,15 +19,8 @@ chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], functio
 
 });
 
-console.log("ISE Assistant is running!");
-var moveGroupMenu = null;
-var coaMenu = null;
-
 chrome.contextMenus.onClicked.addListener(function(item) {
 	// what to do when menu item is clicked!
-	//console.log(item);
-	//console.log(parentMenu);
-
 	// get the selected text
 	let selectedText = item.selectionText;
 
@@ -33,7 +34,6 @@ chrome.contextMenus.onClicked.addListener(function(item) {
 
 		// was this a move click or a COA click?
 		if( item.parentMenuItemId == moveGroupMenu ) {
-			console.log("Moving an item...");
 			// get the group we're moving to
 			let newGroupId   = item.menuItemId
 			
@@ -54,14 +54,18 @@ chrome.contextMenus.onClicked.addListener(function(item) {
 
 
 
-/////////////////////////////////////////
-
+/************
+* Functions
+************/
 
 function getIseInfo(result) {
 	var ise = new Array();
 
-    if(result.iseServer) { ise['server'] = result.iseServer } 
-    else { console.log("Please define server settings.") }
+    if(result.isePanNode) { ise['pan'] = result.isePanNode } 
+    else { console.log("Please define PAN node settings.") }
+
+    if(result.iseMntNode) { ise['mnt'] = result.iseMntNode } 
+    else { console.log("Please define MNT node settings.") }
 
     if(result.isePort) { ise['port'] = result.isePort } 
     else { console.log("Please define port settings.") }
@@ -72,8 +76,8 @@ function getIseInfo(result) {
     	console.log("Please define username and password settings."); 
     }
     
-    ise['ersUrl'] = "https://" + ise['server'] + ":" + ise['port'] + "/ers/config/";
-    ise['mntUrl'] = "https://" + ise['server'] + "/admin/API/mnt/";
+    ise['ersUrl'] = "https://" + ise['pan'] + ":" + ise['port'] + "/ers/config/";
+    ise['mntUrl'] = "https://" + ise['mnt'] + "/admin/API/mnt/";
 
     return ise;
 }
@@ -248,7 +252,7 @@ function normalizeMacs(macs) {
 }
 
 function getEndpointByMac(endpointMac, callback) {
-	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+	chrome.storage.local.get(['isePanNode', 'iseMntNode', 'isePort', 'iseUser', 'isePass'], function(result) {
 		// get ISE settings
 		var ise = getIseInfo(result);
 
@@ -289,7 +293,7 @@ function getEndpointByMac(endpointMac, callback) {
 function moveEndpointsToGroup(endpointMacs, groupId) {
 	// endpointMacs is an array, even if only a single mac
 
-	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+	chrome.storage.local.get(['isePanNode', 'iseMntNode', 'isePort', 'iseUser', 'isePass'], function(result) {
 		var ise = getIseInfo(result);
 
 		// check if this is a bulk update (e.g. >1 endpoint) 
@@ -402,12 +406,7 @@ function moveEndpointsToGroup(endpointMacs, groupId) {
 
 function performCoa(endpointMacs, coaType) {
 	// endpointMacs is an array, even if only a single mac
-	console.log("Performing CoA...");
-	console.log(endpointMacs);
-	console.log(coaType);
-
-
-	chrome.storage.local.get(['iseServer', 'isePort', 'iseUser', 'isePass'], function(result) {
+	chrome.storage.local.get(['isePanNode', 'iseMntNode', 'isePort', 'iseUser', 'isePass'], function(result) {
 		var ise = getIseInfo(result);
 
 		// check if this is a bulk update (e.g. >1 endpoint) 
@@ -444,7 +443,6 @@ function performCoa(endpointMacs, coaType) {
 				  		// unfortunately, the ISE API only returns XML here. Code is not as graceful without JSON.
 				  		let parser = new DOMParser();
 				  		let resp = parser.parseFromString(this.responseText, "text/xml");
-				  		console.log(resp);
 				    	
 				    	if( ! resp ) {
 				    		throw " session was not found.";
@@ -471,7 +469,7 @@ function performCoa(endpointMacs, coaType) {
 									  	if( this.status === 200 ) {
 									  		coaResp = parser.parseFromString(this.responseText, "text/xml");
 									  		coaResult = coaResp.getElementsByTagName("results")[0].childNodes[0].nodeValue;
-									  		console.log(coaResult);
+
 										  	try {
 				  						    	if( coaResult != "true" ) {
 										    		throw "CoA failed.";
@@ -544,7 +542,7 @@ function performCoa(endpointMacs, coaType) {
 									  	if( this.status === 200 ) {
 									  		coaResp = parser.parseFromString(this.responseText, "text/xml");
 									  		coaResult = coaResp.getElementsByTagName("results")[0].childNodes[0].nodeValue;
-									  		console.log(coaResult);
+
 										  	try {
 				  						    	if( coaResult != "true" ) {
 										    		throw "CoA failed.";
