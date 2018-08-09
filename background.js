@@ -6,6 +6,22 @@ var moveGroupMenu = null;
 var coaMenu = null;
 var manifestData = chrome.runtime.getManifest();
 
+// onInstall, popup useful information / intro page.
+chrome.runtime.onInstalled.addListener(function(details) {
+	switch(details.reason) {
+		case "install":
+			// first installation
+			chrome.tabs.create({url: "./intro.html"});
+			break;
+		case "update":
+			// on update, but only if version changed on reload
+			if(details.previousVersion != manifestData.version) {
+				chrome.tabs.create({url: "./update.html"});
+			}
+			break;
+	}
+});
+
 // Get list of Identity Groups on run
 chrome.storage.local.get(['isePanNode', 'iseMntNode', 'isePort', 'iseUser', 'isePass'], function(result) {
 	var ise = getIseInfo(result);
@@ -113,26 +129,7 @@ function getGroupsFromIse(ise, callback) {
 	xhr.send();
 }
 
-function buildMenu(menuItems) {
-	// create parent menu object for moving endpoints to a different group
-	moveGroupMenu = chrome.contextMenus.create({"title": "Add to Identity Group..", "contexts": ["selection"]});
-
-	// get ID/name of each group in JSON response
-	groups = menuItems.resources;
-	
-	// for each group, create child menu object
-	for (group in groups) {
-		let groupId = groups[group]['id'];
-		let groupName = groups[group]['name'];
-
-		chrome.contextMenus.create({
-			id: groupId,
-			title: groupName, 
-			parentId: moveGroupMenu, 
-			contexts: ["selection"]
-		});
-	}
-
+function buildMenu(identityGroups) {
 	// define COA types
 	coaTypes = {  
 	   "reauth":{  
@@ -148,9 +145,11 @@ function buildMenu(menuItems) {
 	      "name": "..with port shutdown"
 	   }
 	}
+	
 	// create parent menu object for performing COAs
 	coaMenu = chrome.contextMenus.create({"title": "Perform ISE CoA..", "contexts": ["selection"]});
 
+	// create child menu item for each COA type
 	for( let coa in coaTypes ) {
 		coa = coaTypes[coa];
 		chrome.contextMenus.create({
@@ -161,7 +160,25 @@ function buildMenu(menuItems) {
 		});
 	}
 
-	// create child menu item for each COA type
+	// create parent menu object for moving endpoints to a different group
+	moveGroupMenu = chrome.contextMenus.create({"title": "Add to Identity Group..", "contexts": ["selection"]});
+
+	// get ID/name of each group in JSON response
+	groups = identityGroups.resources;
+	
+	// for each group, create child menu object
+	for (group in groups) {
+		let groupId = groups[group]['id'];
+		let groupName = groups[group]['name'];
+
+		chrome.contextMenus.create({
+			id: groupId,
+			title: groupName, 
+			parentId: moveGroupMenu, 
+			contexts: ["selection"]
+		});
+	}
+
 	console.log("Menu built!");
 }
 
