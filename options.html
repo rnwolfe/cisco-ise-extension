@@ -19,8 +19,14 @@
     <form id="form">
       <div class="container">
         <div class="form-group">
-          <label for="iseField">ISE Server</label>
-          <input class="form-control" id="iseField" aria-describedby="serverHelp" placeholder="Enter Server Address">
+          <label for="isePanField">ISE Active PAN Node</label>
+          <input class="form-control" id="isePanField" aria-describedby="serverHelp" placeholder="Enter Server Address">
+          <small id="serverHelp" class="form-text text-muted">This should be an FQDN or IP address.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="iseMntField">ISE MNT Node</label>
+          <input class="form-control" id="iseMntField" aria-describedby="serverHelp" placeholder="Enter Server Address">
           <small id="serverHelp" class="form-text text-muted">This should be an FQDN or IP address.</small>
         </div>
 
@@ -31,18 +37,23 @@
         </div>
 
         <div class="form-group">
-          <label for="userField">ISE ERS User</label>
-          <input class="form-control" id="userField" aria-describedby="userHelp" placeholder="Enter ERS Username">
-          <small id="userHelp" class="form-text text-muted">Ensure this user has permissions to ISE ERS.</small>
+          <label for="userField">ISE User</label>
+          <input class="form-control" id="userField" aria-describedby="userHelp" placeholder="Enter ISE Username">
+          <small id="userHelp" class="form-text text-muted">Ensure this user has permissions to ISE ERS, and ISE ERS service is enabled in ISE Settings.</small>
         </div>
 
         <div class="form-group">
-          <label for="passField">ISE ERS Password</label>
-          <input class="form-control" type="password" id="passField" aria-describedby="passHelp" placeholder="Enter ERS Password">
+          <label for="passField">ISE Password</label>
+          <input class="form-control" type="password" id="passField" aria-describedby="passHelp" placeholder="Enter ISE Password">
         </div>
         
         <div class="form-group text-center">
           <button type="submit" value="Submit" id="optionsSubmit" class="btn btn-primary">Save</button>
+          <button value="Refresh" id="refreshGroups" class="btn btn-primary">Refresh Groups</button>
+          
+          <p>
+            <small><a href="./intro.html" target="_blank">Help</a> / <a href="./update.html" target="_blank">Update Notes</a></small>
+          </p>
         </div>
 
       </div>

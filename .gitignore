@@ -1,0 +1,4 @@
+# .gitignore
+test-files/
+archive/
+*.zip

@@ -23,7 +23,8 @@ Commonly, when operating a Cisco ISE deployment, I found myself staring at lines
 
 For the love of god, I just wanted to be able to right click on a MAC address and say "add to identity group XYZ"! Well, this extension does just that. You highlight a MAC address, right click to present a list of Endpoint Identity Groups, and select the one you want. It fires off some API calls and it's done! You get a nice little notification stating as much after it's done!
 
-Eventually, I'd like to add more functionality to this extension, but, as of now, this is the initial need and only feature.
+The ability to perform change of authorization (CoA) requests is now supported. You can perform CoA with session rerun, port bounce, and port shutdown. You can do this for single or bulk MAC addresses.
+
 ## Browser Support
 While this extension was initially built to be used with Google Chrome, I came to notice that Firefox supports most of the needed `chrome` namespace functionality in their own APIs. So, as of v0.4, the extension runs well in both Google Chrome and Mozilla Firefox. 
 
@@ -69,9 +70,9 @@ After saving, the extension will reload and build the context menus from your de
 Select some text and right click to confirm the that the context menu exists with the expected groups in it.
 
 ## How to Use
-To use, simply highlight a MAC address, right click and go to "Add to Identity Group.." and select the desired identity group. 
+To use, simply highlight a MAC address, right click and go to "Add to Identity Group.." and select the desired identity group. You also have the ability to perform CoAs with supported types being session rerun, port bounce, and port shutdown.
 
-The context menu will appear only when text is selected. It should work on any webpage, tab, etc. 
+The context menu will appear only when text is selected. It should work on any webpage, tab, etc. as long as it is within the Chrome Browser. Even text files opened in Chrome will work. 
 
 ### Refresh Identity Group List
 The identity groups listed in the context menu are pulled from ISE when you open Chrome. 
@@ -109,6 +110,7 @@ While I create issues for enhancements, todos, etc, I want to add more functiona
 As of this commit, I have only tested this using:
 
 - Windows 10 
+- macOS 10.13.6
 - Google Chrome Version 67.0.3396.99
 - Firefox Quantum 61.0.1 (64-bit)
 - Cisco ISE 2.4 
