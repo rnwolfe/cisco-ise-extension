@@ -100,7 +100,7 @@ function getIseInfo(result) {
 
 function getGroupsFromIse(ise, callback) {
 	// Define ISE Parameters
-	let groupsURL = ise['ersUrl'] + "endpointgroup"
+	let groupsURL = ise['ersUrl'] + "endpointgroup?size=100"
 
 	// Create HTTP request
 	let xhr = new XMLHttpRequest();
