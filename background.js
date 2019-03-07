@@ -208,23 +208,72 @@ function buildMenu(groups) {
 
 	// sort groups alphabetically for better menu usability
 	groups.sort(function(a, b) {
-    var textA = a.name.toUpperCase();
-    var textB = b.name.toUpperCase();
-    return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+		var textA = a.name.toUpperCase();
+		var textB = b.name.toUpperCase();
+		return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
 	});
 
-	// for each group, create child menu object
-	for (group in groups) {
-    let groupId = groups[group]['id'];
-    let groupName = groups[group]['name'];
+	if (groups.length < 40) {
+		// small number of groups, add to menu directly
+		// for each group, create child menu object
+		for (group in groups) {
+			let groupId = groups[group]['id'];
+			let groupName = groups[group]['name'];
 
-    chrome.contextMenus.create({
-      id: groupId,
-      title: groupName,
-      parentId: moveGroupMenu,
-      contexts: ['selection']
-    });
-  }
+			chrome.contextMenus.create({
+				id: groupId,
+				title: groupName,
+				parentId: moveGroupMenu,
+				contexts: ['selection']
+			});
+		}
+	} else {
+		// large number of groups, add alphabetical menu heirarchy
+		const alphabet = 'abcdefghijklmnopqrstuvwxyz'.toUpperCase().split('')
+
+		alphabet.forEach(letter => {
+			let groupId = 'letter-' + letter;
+			let groupName = letter;
+
+			chrome.contextMenus.create({
+				id: groupId,
+				title: groupName,
+				parentId: moveGroupMenu,
+				contexts: ['selection']
+			});
+		});
+
+		const usedLetters = [];
+		for (group in groups) {
+			let groupId = groups[group]['id'];
+			let groupName = groups[group]['name'];
+			let firstLetter = groupName.slice(0, 1).toUpperCase();
+
+			// To keep menu as concise as possible, we're going to keep track of
+			// the letters we use and remove unused letter submenus.
+			usedLetters.push(firstLetter);
+
+			chrome.contextMenus.create({
+				id: groupId,
+				title: groupName,
+				parentId: 'letter-' + firstLetter,
+				contexts: ['selection']
+			});
+		}
+
+		// Let's remove those unused sub-menus for brevity
+		const unusedMenus = alphabet;
+		usedLetters.forEach(letter => {
+			let index = unusedMenus.indexOf(letter);
+			if (index > -1) {
+				unusedMenus.splice(index, 1);
+			}
+		});
+
+		unusedMenus.forEach(letter => {
+			chrome.contextMenus.remove('letter-' + letter);
+		})
+	}
   console.log('Menu built!');
 }
 
