@@ -39,7 +39,7 @@ chrome.storage.local.get(['isePanNode', 'iseMntNode', 'isePort', 'iseUser', 'ise
     .then(groups => buildMenu(groups));
 });
 
-chrome.contextMenus.onClicked.addListener(function(item) {
+chrome.contextMenus.onClicked.addListener(function (item) {
   // what to do when menu item is clicked!
   // get the selected text
   let selectedText = item.selectionText;
@@ -53,7 +53,7 @@ chrome.contextMenus.onClicked.addListener(function(item) {
     endpointMacs = normalizeMacs(endpointMacs);
 
     // was this a move click or a COA click?
-    if (item.parentMenuItemId == moveGroupMenu) {
+    if (item.parentMenuItemId == moveGroupMenu || item.parentMenuItemId.startsWith('letter')) {
       // get the group we're moving to
       let newGroupId = item.menuItemId;
 
