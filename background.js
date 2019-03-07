@@ -206,6 +206,13 @@ function buildMenu(groups) {
     contexts: ['selection']
   });
 
+	// sort groups alphabetically for better menu usability
+	groups.sort(function(a, b) {
+    var textA = a.name.toUpperCase();
+    var textB = b.name.toUpperCase();
+    return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+	});
+
 	// for each group, create child menu object
 	for (group in groups) {
     let groupId = groups[group]['id'];
