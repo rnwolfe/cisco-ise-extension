@@ -31,7 +31,11 @@ chrome.storage.local.get(['isePanNode', 'iseMntNode', 'isePort', 'iseUser', 'ise
   // let's fire the canons
   getIseSettings()
     .then(settings => getIseInfo(settings))
-    .then(ise => getGroupsFromIse(ise))
+		.then(ise => {
+			return new Promise((resolve, reject) => {
+				getGroupsFromIse(ise, [], null, resolve, reject)
+			})
+		})
     .then(groups => buildMenu(groups));
 });
 
@@ -119,55 +123,56 @@ function getIseInfo(result) {
   });
 }
 
-function getGroupsFromIse(ise) {
-  return new Promise(function(resolve, reject) {
-    // Define ISE Parameters
-    let groupsURL = ise['ersUrl'] + 'endpointgroup?size=100';
+function getGroupsFromIse(ise, groups, url = null, resolve, reject) {
+	// Define URL to retrieve groups. Max is 100.
+	let groupsURL = url ? url: ise['ersUrl'] + 'endpointgroup?size=100&page=1';
 
-    fetch(groupsURL, {
-      headers: {
-        Authorization: 'Basic ' + ise['auth'],
-        Accept: 'application/json'
-      }
-    })
-      .then(response => {
-        if (response.status == 200) {
-          response.json().then(data => {
-            let groups = data.SearchResult.resources;
-            resolve(groups);
-          });
-        } else {
-          if (response.status == 401) {
-            notify(
-              'Error!',
-              'Configured username/password does not have required permission in ISE. Please update username/password or fix permissions. Alternatively, disable the extension to stop these errors.',
-              'fail'
-            );
-            reject();
-          } else if (response.status == 0) {
-            notify(
-              'Error!',
-              'Configured server is inaccessible. Please check server IP or DNS settings.',
-              'fail'
-            );
-            reject();
-          }
-        }
-      })
-      .catch(
-        error =>
-          function() {
-            console.error('Error:', error);
-            reject(error);
-          }
-      );
-  });
+	fetch(groupsURL, {
+		headers: {
+			Authorization: 'Basic ' + ise['auth'],
+			Accept: 'application/json'
+		}
+	})
+		.then(response => {
+			if (response.status == 200) {
+				response.json().then(data => {
+					data = data.SearchResult;
+					const retrievedGroups = groups.concat(data.resources);
+					if (data.nextPage && data.nextPage.href != '') {
+						getGroupsFromIse(ise, retrievedGroups, data.nextPage.href, resolve, reject)
+					} else {
+						resolve(retrievedGroups);
+					}
+				});
+			} else {
+				if (response.status == 401) {
+					notify(
+						'Error!',
+						'Configured username/password does not have required permission in ISE. Please update username/password or fix permissions. Alternatively, disable the extension to stop these errors.',
+						'fail'
+					);
+				} else if (response.status == 0) {
+					notify(
+						'Error!',
+						'Configured server is inaccessible. Please check server IP or DNS settings.',
+						'fail'
+					);
+				}
+				reject('Error with fetch.');
+			}
+		})
+		.catch(
+			error => {
+					console.error('Error:', error);
+					reject(error);
+				}
+		);
 }
 
 function buildMenu(groups) {
   // define COA types
   coaTypes = {
-    reauth: {
+    'reauth': {
       id: 'coa-reauth',
       name: '..with reauth'
     },
@@ -201,8 +206,8 @@ function buildMenu(groups) {
     contexts: ['selection']
   });
 
-  // for each group, create child menu object
-  for (group in groups) {
+	// for each group, create child menu object
+	for (group in groups) {
     let groupId = groups[group]['id'];
     let groupName = groups[group]['name'];
 
