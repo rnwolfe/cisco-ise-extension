@@ -2,3 +2,7 @@
 test-files/
 archive/
 *.zip
+releases/
+
+# macOS
+.DS_Store
