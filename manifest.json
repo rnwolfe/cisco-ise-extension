@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "ISE Assistant",
-	"version": "0.5.6",
+	"version": "0.7",
 	"options_ui": {
 		"page": "options.html"
 	},
