@@ -52,8 +52,8 @@ chrome.contextMenus.onClicked.addListener(function (item) {
     // normalize the mac addresses (convert all to AA:BB:CC:11:22:33 format)
     endpointMacs = normalizeMacs(endpointMacs);
 
-    // was this a move click or a COA click?
-    if (item.parentMenuItemId == moveGroupMenu || item.parentMenuItemId.startsWith('letter')) {
+		// was this a move click or a COA click?
+    if (item.parentMenuItemId == moveGroupMenu || (typeof(item.parentMenuItemId) != 'number') && item.parentMenuItemId.startsWith('letter')) {
       // get the group we're moving to
       let newGroupId = item.menuItemId;
 
