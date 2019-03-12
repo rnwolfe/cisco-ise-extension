@@ -97,6 +97,13 @@ function getGroupsFromIse(ise, groups, url = null, resolve, reject) {
 }
 
 function buildMenu(groups) {
+  buildCoaMenu();
+  buildGroupMenu(groups);
+  buildMacInfoMenu();
+  console.log('Menu built!');
+}
+
+function buildCoaMenu() {
   // define COA types
   coaTypes = {
     'reauth': {
@@ -126,7 +133,9 @@ function buildMenu(groups) {
       contexts: ['selection']
     });
   }
+}
 
+function buildGroupMenu(groups) {
   // create parent menu object for moving endpoints to a different group
   moveGroupMenu = chrome.contextMenus.create({
     title: 'Add to Identity Group..',
@@ -201,7 +210,14 @@ function buildMenu(groups) {
 			chrome.contextMenus.remove('letter-' + letter);
 		})
 	}
-  console.log('Menu built!');
+}
+
+function buildMacInfoMenu() {
+  chrome.contextMenus.create({
+    id: 'get-mac-info',
+    title: 'Get MAC Info...',
+    contexts: ['selection']
+  });
 }
 
 function findMacAddresses(selectedText) {
@@ -750,6 +766,59 @@ function performCoa(endpointMacs, coaType) {
         });
     }
   });
+}
+
+function openMacInfoTab(mac) {
+  chrome.tabs.create({ url: 'mac.html?mac=' + mac }, function (tab) {
+    console.log(tab);
+  });
+}
+
+function getMacInfo(mac) {
+  // perform API call to get session info
+  return getIseInfo()
+    .then(ise => {
+      let sessionURL =
+      ise['mntUrl'] +
+      'Session/MACAddress/' +
+      mac;
+
+      return fetch(sessionURL, {
+        headers: {
+          Authorization: 'Basic ' + ise['auth'],
+          Accept: 'application/xml'
+        }
+      })
+        .then(result => {
+          if (result.status === 200) {
+            return result.text();
+          } else if (this.status === 401) {
+            notify('Error!', 'Configured user does not have required permissions.', 'fail');
+          } else if (this.status === 500) {
+            notify(
+              'Error!',
+              "Received server error from ISE. This normally means an active session wasn't found.",
+              'fail'
+            );
+          } else if (this.status === 0) {
+            notify('Error!', 'Received no response from server.', 'fail');
+          }
+        })
+        .then(responseXml => {
+          let parser = new DOMParser();
+          let xml = parser.parseFromString(responseXml, 'text/xml');
+          let json = {};
+          // makeshift conversion from XML to JSON
+          xml.getElementsByTagName('sessionParameters')[0].childNodes.forEach(child => {
+            json[child.tagName] = child.innerHTML;
+          });
+          return json;
+        })
+        .then(data => {
+          console.log(data);
+          return data;
+        });
+    });
 }
 
 function notify(title, message, icon = 'icon128', type = 'basic', id = null, progress = 0) {

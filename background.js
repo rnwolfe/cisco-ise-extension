@@ -52,15 +52,19 @@ chrome.contextMenus.onClicked.addListener(function (item) {
     // normalize the mac addresses (convert all to AA:BB:CC:11:22:33 format)
     endpointMacs = normalizeMacs(endpointMacs);
 
-		// was this a move click or a COA click?
-    if (item.parentMenuItemId == moveGroupMenu || (typeof(item.parentMenuItemId) != 'number') && item.parentMenuItemId.startsWith('letter')) {
+		// What menu action was clicked?
+    if (item.parentMenuItemId && (item.parentMenuItemId == moveGroupMenu || String(item.parentMenuItemId).startsWith('letter'))) {
       // get the group we're moving to
       let newGroupId = item.menuItemId;
-
       // move the macs
       moveEndpointsToGroup(endpointMacs, newGroupId);
-    } else if (item.parentMenuItemId == coaMenu) {
+    } else if (item.parentMenuItemId && item.parentMenuItemId == coaMenu) {
       performCoa(endpointMacs, item.menuItemId);
+    } else if (item.menuItemId == 'get-mac-info') {
+      // Since this opens a new tab for each, we're capping it at 10.
+      endpointMacs.slice(0,10).forEach(mac => {
+        openMacInfoTab(mac)
+      });
     }
   } else {
     notify(
@@ -70,3 +74,18 @@ chrome.contextMenus.onClicked.addListener(function (item) {
     );
   }
 });
+
+chrome.runtime.onMessage.addListener(
+  function (message, sender, sendResponse) {
+    if (message.action == 'get-mac-info') {
+      const url = new URL(sender.tab.url);
+      const mac = url.searchParams.get("mac");
+      getMacInfo(mac).then(macInfo => {
+        if (macInfo) {
+          sendResponse(macInfo);
+        }
+      });
+    }
+    // this let's chrome know that an asynchronous response is coming
+    return true;
+  });
