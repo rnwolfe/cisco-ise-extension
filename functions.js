@@ -99,7 +99,7 @@ function getGroupsFromIse(ise, groups, url = null, resolve, reject) {
 function buildMenu(groups) {
   buildCoaMenu();
   buildGroupMenu(groups);
-  buildMacInfoMenu();
+  buildSessionInfoMenu();
   console.log('Menu built!');
 }
 
@@ -212,10 +212,10 @@ function buildGroupMenu(groups) {
 	}
 }
 
-function buildMacInfoMenu() {
+function buildSessionInfoMenu() {
   chrome.contextMenus.create({
-    id: 'get-mac-info',
-    title: 'Get MAC Info...',
+    id: 'get-session-info',
+    title: 'Get Session Info...',
     contexts: ['selection']
   });
 }
@@ -421,19 +421,19 @@ function moveEndpointsToGroup(endpointMacs, groupId) {
           .then(response => {
             if (response.status === 200) {
               return response.json();
-            } else if (this.status === 401) {
+            } else if (response.status === 401) {
               notify(
                 'Error!',
                 'Configured user does not have required permissions to modify endpoint.',
                 'fail'
               );
-            } else if (this.status === 500) {
+            } else if (response.status === 500) {
               notify(
                 'Error!',
                 'Received server error from ISE for one endpoint request. This may be a rate-limit issue.',
                 'fail'
               );
-            } else if (this.status === 0) {
+            } else if (response.status === 0) {
               notify('Error!', 'Received no response from server.', 'fail');
             }
           })
@@ -533,19 +533,19 @@ function performCoa(endpointMacs, coaType) {
 					if (result.status === 200) {
 						// Return as text since response is XML
             return result.text();
-          } else if (this.status === 401) {
+          } else if (result.status === 401) {
             notify(
               'Error!',
               'Configured user does not have required permissions to modify endpoint.',
               'fail'
             );
-          } else if (this.status === 500) {
+          } else if (result.status === 500) {
             notify(
               'Error!',
               'Received server error from ISE for one endpoint request. This may be a rate-limit issue.',
               'fail'
             );
-          } else if (this.status === 0) {
+          } else if (result.status === 0) {
             notify('Error!', 'Received no response from server.', 'fail');
           }
         })
@@ -572,15 +572,15 @@ function performCoa(endpointMacs, coaType) {
 								.then(result => {
 									if (result.status === 200) {
 										return result.text();
-                  } else if (this.status === 401) {
+                  } else if (result.status === 401) {
                     notify('Error!', 'Configured user does not have required permissions.', 'fail');
-                  } else if (this.status === 500) {
+                  } else if (result.status === 500) {
                     notify(
                       'Error!',
                       "Received server error from ISE for CoA request. This normally means an active session wasn't found.",
                       'fail'
                     );
-                  } else if (this.status === 0) {
+                  } else if (result.status === 0) {
                     notify('Error!', 'Received no response from server.', 'fail');
                   }
 								})
@@ -678,15 +678,15 @@ function performCoa(endpointMacs, coaType) {
 								.then(result => {
 									if (result.status === 200) {
 										return result.text();
-									} else if (this.status === 401) {
+									} else if (result.status === 401) {
 										notify('Error!', 'Configured user does not have required permissions.', 'fail');
-									} else if (this.status === 500) {
+									} else if (result.status === 500) {
 										notify(
 											'Error!',
 											"Received server error from ISE for CoA request. This normally means an active session wasn't found.",
 											'fail'
 										);
-									} else if (this.status === 0) {
+									} else if (result.status === 0) {
 										notify('Error!', 'Received no response from server.', 'fail');
 									}
 								})
@@ -768,13 +768,11 @@ function performCoa(endpointMacs, coaType) {
   });
 }
 
-function openMacInfoTab(mac) {
-  chrome.tabs.create({ url: 'mac.html?mac=' + mac }, function (tab) {
-    console.log(tab);
-  });
+function openSessionInfoTab(mac) {
+  chrome.tabs.create({ url: 'mac.html?mac=' + mac });
 }
 
-function getMacInfo(mac) {
+function getSessionInfo(mac) {
   // perform API call to get session info
   return getIseInfo()
     .then(ise => {
@@ -791,31 +789,40 @@ function getMacInfo(mac) {
       })
         .then(result => {
           if (result.status === 200) {
-            return result.text();
-          } else if (this.status === 401) {
+            return result.text()
+              .then(text => {
+                return { status: 200, xml: text };
+            })
+          } else if (result.status === 401) {
             notify('Error!', 'Configured user does not have required permissions.', 'fail');
-          } else if (this.status === 500) {
+            return { error: 401, status: 'Configured user does not have required permissions!' };
+          } else if (result.status === 500) {
             notify(
               'Error!',
               "Received server error from ISE. This normally means an active session wasn't found.",
               'fail'
             );
-          } else if (this.status === 0) {
+            return { error: 500, status: 'No session found!' };
+          } else if (result.status === 0) {
             notify('Error!', 'Received no response from server.', 'fail');
+            return { error: 0, status: 'Received no response from server!' };
           }
         })
-        .then(responseXml => {
-          let parser = new DOMParser();
-          let xml = parser.parseFromString(responseXml, 'text/xml');
-          let json = {};
-          // makeshift conversion from XML to JSON
-          xml.getElementsByTagName('sessionParameters')[0].childNodes.forEach(child => {
-            json[child.tagName] = child.innerHTML;
-          });
-          return json;
+        .then(response => {
+          if (response.status === 200) {
+            let parser = new DOMParser();
+            let xml = parser.parseFromString(response.xml, 'text/xml');
+            let json = {};
+            // makeshift conversion from XML to JSON
+            xml.getElementsByTagName('sessionParameters')[0].childNodes.forEach(child => {
+              json[child.tagName] = child.innerHTML;
+            });
+            return {success:true, data: json};
+          } else {
+            return { success: false, data: response.status };
+          }
         })
         .then(data => {
-          console.log(data);
           return data;
         });
     });

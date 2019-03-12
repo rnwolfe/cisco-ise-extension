@@ -60,10 +60,10 @@ chrome.contextMenus.onClicked.addListener(function (item) {
       moveEndpointsToGroup(endpointMacs, newGroupId);
     } else if (item.parentMenuItemId && item.parentMenuItemId == coaMenu) {
       performCoa(endpointMacs, item.menuItemId);
-    } else if (item.menuItemId == 'get-mac-info') {
+    } else if (item.menuItemId == 'get-session-info') {
       // Since this opens a new tab for each, we're capping it at 10.
       endpointMacs.slice(0,10).forEach(mac => {
-        openMacInfoTab(mac)
+        openSessionInfoTab(mac)
       });
     }
   } else {
@@ -77,14 +77,18 @@ chrome.contextMenus.onClicked.addListener(function (item) {
 
 chrome.runtime.onMessage.addListener(
   function (message, sender, sendResponse) {
-    if (message.action == 'get-mac-info') {
+    if (message.action == 'get-session-info') {
       const url = new URL(sender.tab.url);
       const mac = url.searchParams.get("mac");
-      getMacInfo(mac).then(macInfo => {
-        if (macInfo) {
-          sendResponse(macInfo);
-        }
-      });
+      getSessionInfo(mac)
+        .then(macInfo => {
+          if (macInfo) {
+            sendResponse(macInfo);
+          }
+        })
+        .catch(error => {
+          console.error(error);
+        });
     }
     // this let's chrome know that an asynchronous response is coming
     return true;
