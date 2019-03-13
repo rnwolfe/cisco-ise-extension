@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MAC Info</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script type="text/javascript" src="ise-messages/ise-messages.js"></script>
+    <script type="text/javascript" src="mac.js"></script>
+    <style>
+			body {
+				background-color: #F9F9F9;
+			}
+
+			.container {
+				background-color: white;
+				min-width: 500px;
+				max-width: 1200px;
+				padding: 5px;
+				margin-bottom: 15px;
+			}
+
+			.navbar-header {
+					float: left;
+					text-align: center;
+					width: 100%;
+			}
+
+			.navbar-brand {
+				float:none;
+			}
+
+			.content {
+				padding: 10px;
+			}
+
+			.indent {
+				padding-left: 20px;
+			}
+
+			.table {
+				margin: 10px auto;
+			}
+
+			td {
+				max-width: 750px;
+        word-wrap: break-word; /* Internet Explorer 5.5+ */
+			}
+
+			pre {
+				display: none;
+				border: 2px #cccccc solid;
+				border-radius: 10px;
+				background-color: rgb(236, 236, 236);
+				padding: 10px;
+			}
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+	    <nav class="navbar navbar-primary bg-primary">
+	    	<div class="navbar-header">
+			      <div class="navbar-brand mb-0 h1 text-white" id="header">Endpoint Info</div>
+			  </div>
+	    </nav>
+
+    	<div class="content" id="content"></div>
+
+			<div class="text-center">
+				<a href="#raw" id="show-raw"><strong>View RAW Attributes</strong></a>
+				<pre class="text-left" id="raw">none</pre>
+			</div>
+		</div>
+  </body>
+</html>
