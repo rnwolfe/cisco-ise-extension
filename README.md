@@ -2,7 +2,7 @@
 
 A Google Chrome and Firefox extension to help perform common tasks in Cisco ISE.
 
-<div style="text-align: center;">
+<p align="center">
     <a href="https://chrome.google.com/webstore/detail/ise-assistant/bgcgpgjpecloagakaainoamfaedknpol"><img src="https://badgen.net/chrome-web-store/v/bgcgpgjpecloagakaainoamfaedknpol" alt="chrome web store version" /></a>
     <a href="https://chrome.google.com/webstore/detail/ise-assistant/bgcgpgjpecloagakaainoamfaedknpol"><img src="https://badgen.net/chrome-web-store/users/bgcgpgjpecloagakaainoamfaedknpol" alt="chrome web store version" /></a>
     <a href="https://chrome.google.com/webstore/detail/ise-assistant/bgcgpgjpecloagakaainoamfaedknpol"><img src="https://badgen.net/chrome-web-store/price/bgcgpgjpecloagakaainoamfaedknpol" alt="chrome web store version" /></a>
@@ -13,7 +13,7 @@ A Google Chrome and Firefox extension to help perform common tasks in Cisco ISE.
     <a href="https://addons.mozilla.org/en-US/firefox/addon/ise-assistant/"><img src="https://badgen.net/badge/price/Free/green " alt="mozilla firefox add-on version" /></a>
     <a href="https://addons.mozilla.org/en-US/firefox/addon/ise-assistant/"><img src="https://badgen.net/amo/stars/ise-assistant" alt="mozilla firefox add-on version" /></a>
     <a href="https://addons.mozilla.org/en-US/firefox/addon/ise-assistant/"><img src="https://badgen.net/amo/reviews/ise-assistant" alt="mozilla firefox add-on version" /></a>
-</div>
+</p>
 
 ## Table of Contents
 
